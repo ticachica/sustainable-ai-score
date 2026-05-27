@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SustainableAI Score — See how your AI stack really stacks up.</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { scroll-behavior: smooth; }
+    body { font-family: 'Inter', sans-serif; }
+    .chart-container { position: relative; height: 300px; width: 100%; }
+    .chart-container-radar { position: relative; height: 280px; width: 100%; max-width: 400px; margin: 0 auto; }
+    .pill-active { ring: 2px solid currentColor; }
+    .sort-icon { opacity: 0.3; margin-left: 4px; font-size: 0.7em; }
+    .sort-active { opacity: 1; }
+    .detail-panel { display: none; }
+    .detail-panel.open { display: block; }
+    .report-panel { display: none; }
+    .report-panel.open { display: block; }
+    .gradient-text { background: linear-gradient(135deg, #10b981, #34d399, #6ee7b7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .gradient-bg { background: linear-gradient(135deg, #064e3b, #065f46, #047857); }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-in { animation: fadeIn 0.4s ease-out; }
+    @keyframes slideDown { from { opacity: 0; max-height: 0; } to { opacity: 1; max-height: 2000px; } }
+    .slide-down { animation: slideDown 0.4s ease-out; }
+    .bar-highlight { filter: brightness(1.3); }
+    tr.selected-row { outline: 2px solid #10b981; outline-offset: -2px; border-radius: 8px; }
+    .verdict-badge { padding: 2px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-200 antialiased">
+
+  <!-- ====== HERO ====== -->
+  <header class="relative overflow-hidden">
+    <div class="absolute inset-0 gradient-bg opacity-20"></div>
+    <div class="relative max-w-6xl mx-auto px-4 py-16 sm:py-24 text-center">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-900/40 text-emerald-300 text-xs font-medium mb-6 border border-emerald-700/30">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        Open Beta
+      </div>
+      <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight mb-4">
+        <span class="gradient-text">SustainableAI Score</span>
+      </h1>
+      <p class="text-lg sm:text-xl text-slate-400 max-w-2xl mx-auto mb-2">See how your AI stack really stacks up.</p>
+      <p class="text-sm text-slate-500 max-w-xl mx-auto mb-10">A 6-dimension framework rating AI providers and tools on environmental and societal sustainability. Higher is better.</p>
+      <div class="flex flex-wrap justify-center gap-8 sm:gap-12 text-center">
+        <div><div class="text-3xl font-bold text-emerald-400">9</div><div class="text-xs text-slate-500 mt-1">Providers Evaluated</div></div>
+        <div><div class="text-3xl font-bold text-emerald-400">6</div><div class="text-xs text-slate-500 mt-1">Dimensions</div></div>
+        <div><div class="text-3xl font-bold text-emerald-400">30</div><div class="text-xs text-slate-500 mt-1">Max Score</div></div>
+        <div><div class="text-3xl font-bold text-emerald-400">4</div><div class="text-xs text-slate-500 mt-1">Tiers</div></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ====== DROPDOWN ====== -->
+  <section class="max-w-3xl mx-auto px-4 -mt-4 mb-12 relative z-10">
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 shadow-xl">
+      <label for="provider-select" class="block text-sm font-medium text-slate-400 mb-2">Select a provider to evaluate</label>
+      <div class="relative">
+        <select id="provider-select" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-slate-200 text-base appearance-none cursor-pointer focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:outline-none">
+          <option value="">— Choose a provider or tool —</option>
+        </select>
+        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+          <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+        </div>
+      </div>
+      <div id="phase2-card" class="mt-4 pt-4 border-t border-slate-700 hidden">
+        <p class="text-xs text-slate-500 mb-2">Don't see yours? Phase 2 coming soon — AI-powered evaluations on demand.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== MAIN CONTENT ====== -->
+  <main class="max-w-6xl mx-auto px-4 pb-20 space-y-12">
+
+    <!-- Quick Decision Guide -->
+    <section id="decision-guide">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-bold text-white">Quick Decision Guide</h2>
+        <div class="flex gap-2" id="filter-pills">
+          <button data-filter="all" class="pill px-3 py-1.5 text-xs font-medium rounded-full bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors">All</button>
+          <button data-filter="Excellent" class="pill px-3 py-1.5 text-xs font-medium rounded-full bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors">Excellent</button>
+          <button data-filter="Mixed" class="pill px-3 py-1.5 text-xs font-medium rounded-full bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors">Mixed</button>
+          <button data-filter="Poor" class="pill px-3 py-1.5 text-xs font-medium rounded-full bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors">Poor</button>
+          <button data-filter="Avoid" class="pill px-3 py-1.5 text-xs font-medium rounded-full bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors">Avoid</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Score Table -->
+    <section id="score-table-section">
+      <h2 class="text-xl font-bold text-white mb-4">Score Comparison</h2>
+      <div class="overflow-x-auto rounded-xl border border-slate-700">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-slate-800 text-slate-400 text-xs uppercase tracking-wider">
+              <th class="sortable text-left py-3 px-4 font-medium cursor-pointer hover:text-slate-200" data-col="name">Provider <span class="sort-icon">↕</span></th>
+              <th class="sortable text-center py-3 px-2 font-medium cursor-pointer hover:text-slate-200 w-12" data-col="hw">H/W <span class="sort-icon">↕</span></th>
+              <th class="sortable text-center py-3 px-2 font-medium cursor-pointer hover:text-slate-200 w-12" data-col="dc">DC <span class="sort-icon">↕</span></th>
+              <th class="sortable text-center py-3 px-2 font-medium cursor-pointer hover:text-slate-200 w-12" data-col="train">Train <span class="sort-icon">↕</span></th>
+              <th class="sortable text-center py-3 px-2 font-medium cursor-pointer hover:text-slate-200 w-12" data-col="infer">Infer <span class="sort-icon">↕</span></th>
+              <th class="sortable text-center py-3 px-2 font-medium cursor-pointer hover:text-slate-200 w-12" data-col="gov">Gov <span class="sort-icon">↕</span></th>
+              <th class="sortable text-center py-3 px-2 font-medium cursor-pointer hover:text-slate-200 w-12" data-col="tool">Tool <span class="sort-icon">↕</span></th>
+              <th class="sortable text-center py-3 px-3 font-medium cursor-pointer hover:text-slate-200" data-col="total">Total <span class="sort-icon">↕</span></th>
+              <th class="text-center py-3 px-3 font-medium">Verdict</th>
+            </tr>
+          </thead>
+          <tbody id="table-body" class="divide-y divide-slate-700"></tbody>
+        </table>
+      </div>
+      <p class="text-xs text-slate-500 mt-2">H/W = Hardware &amp; Manufacturing · DC = Data Center Operations · Train = Training Footprint · Infer = Inference Efficiency · Gov = Company Governance · Tool = Tool/Agent Design</p>
+    </section>
+
+    <!-- Bar Chart -->
+    <section id="chart-section">
+      <h2 class="text-xl font-bold text-white mb-4">Total Scores</h2>
+      <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 sm:p-6">
+        <div class="chart-container">
+          <canvas id="barChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Report Panel -->
+    <section id="report-section">
+      <div id="report-panel" class="report-panel fade-in">
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-6">
+          <div class="flex items-start justify-between mb-6">
+            <div>
+              <span class="text-xs text-slate-500 uppercase tracking-wider">Evaluation Report</span>
+              <h3 id="report-name" class="text-2xl font-bold text-white mt-1"></h3>
+              <div class="flex items-center gap-3 mt-1">
+                <span id="report-total" class="text-lg font-semibold"></span>
+                <span id="report-verdict" class="verdict-badge"></span>
+              </div>
+            </div>
+            <button onclick="closeReport()" class="text-slate-500 hover:text-slate-300 transition-colors">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+          </div>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div>
+              <div class="chart-container-radar">
+                <canvas id="radarChart"></canvas>
+              </div>
+            </div>
+            <div>
+              <h4 class="text-sm font-semibold text-slate-300 mb-3">Dimension Breakdown</h4>
+              <div id="report-dimensions" class="space-y-2"></div>
+            </div>
+          </div>
+          <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <h4 class="text-sm font-semibold text-slate-300 mb-2">Trade-offs</h4>
+              <p id="report-tradeoffs" class="text-sm text-slate-400 leading-relaxed"></p>
+            </div>
+            <div>
+              <h4 class="text-sm font-semibold text-slate-300 mb-2">Key Gaps</h4>
+              <ul id="report-gaps" class="text-sm text-slate-400 space-y-1 list-disc list-inside"></ul>
+            </div>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-700">
+            <h4 class="text-sm font-semibold text-slate-300 mb-2">Sources</h4>
+            <ul id="report-sources" class="text-sm text-slate-400 space-y-1 list-disc list-inside"></ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Your Setup -->
+    <section id="your-setup">
+      <h2 class="text-xl font-bold text-white mb-4">Your Setup</h2>
+      <div class="bg-slate-800 border border-slate-700 rounded-xl p-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          <div><span class="text-xs text-slate-500 block">Hardware</span><span class="text-sm font-medium">MacBook Air M4 (32GB)</span></div>
+          <div><span class="text-xs text-slate-500 block">Power Source</span><span class="text-sm font-medium text-emerald-400">Home solar (spring/summer)</span></div>
+          <div><span class="text-xs text-slate-500 block">Local Inference</span><span class="text-sm font-medium">Ollama + Gemma 4 8B (Q4_K_M) / llama.cpp</span></div>
+          <div><span class="text-xs text-slate-500 block">Cloud Use</span><span class="text-sm font-medium">DeepSeek V4 Flash via OpenRouter free tier</span></div>
+        </div>
+        <div class="bg-slate-900/50 rounded-lg p-3 text-xs text-slate-400 leading-relaxed">
+          <strong class="text-slate-300">Personal modifiers:</strong> +1 H/W for reusing existing device, +1 DC for solar-powered local inference. Your actual score with this setup: <strong class="text-emerald-400">28/30</strong>.
+        </div>
+      </div>
+    </section>
+
+    <!-- Key Insights -->
+    <section id="key-insights">
+      <h2 class="text-xl font-bold text-white mb-4">Key Insights</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
+          <div class="flex items-start gap-3">
+            <span class="text-emerald-400 text-lg mt-0.5">1</span>
+            <div><h3 class="text-sm font-semibold text-white mb-1">Two-tier reality</h3><p class="text-sm text-slate-400 leading-relaxed">Local + solar (28/30) far outranks any cloud provider (8–20/30). The single biggest sustainability lever is running inference locally.</p></div>
+          </div>
+        </div>
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
+          <div class="flex items-start gap-3">
+            <span class="text-amber-400 text-lg mt-0.5">2</span>
+            <div><h3 class="text-sm font-semibold text-white mb-1">Training transparency gap</h3><p class="text-sm text-slate-400 leading-relaxed">Even the best providers (Meta at 4/5) don't publish full lifecycle carbon assessments. Most score 1–2/5.</p></div>
+          </div>
+        </div>
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
+          <div class="flex items-start gap-3">
+            <span class="text-amber-400 text-lg mt-0.5">3</span>
+            <div><h3 class="text-sm font-semibold text-white mb-1">Efficiency ≠ sustainability</h3><p class="text-sm text-slate-400 leading-relaxed">DeepSeek is the most efficient cloud architecture but runs on ~60% coal grid. Architecture alone isn't enough — grid matters.</p></div>
+          </div>
+        </div>
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
+          <div class="flex items-start gap-3">
+            <span class="text-red-400 text-lg mt-0.5">4</span>
+            <div><h3 class="text-sm font-semibold text-white mb-1">xAI is an outlier</h3><p class="text-sm text-slate-400 leading-relaxed">At 8/30 with a 5-point gap to the next worst, xAI is in a category of its own. Active Memphis lawsuit, zero transparency.</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ====== FOOTER ====== -->
+  <footer class="border-t border-slate-800 py-8 mt-12">
+    <div class="max-w-6xl mx-auto px-4 text-center text-sm text-slate-500">
+      <p class="mb-1"><strong class="text-slate-400">SustainableAI Score</strong> — built on the <a href="#" class="text-emerald-400 hover:text-emerald-300 underline">Sustainable AI Evaluation Framework</a></p>
+      <p>Last updated: May 26, 2026 · 9 providers evaluated · 6 dimensions · All data publicly sourced</p>
+      <p class="mt-2 text-xs text-slate-600">Built by <a href="#" class="text-slate-500 hover:text-slate-300">Jennifer</a> · Powered by Hermes Agent</p>
+    </div>
+  </footer>
+
+<script>
+// ====== DATA ======
+const DIMENSION_LABELS = ['Hardware & Manufacturing', 'Data Center Operations', 'Training Footprint', 'Inference Efficiency', 'Company Governance', 'Tool/Agent Design'];
+const DIMENSION_SHORT = ['H/W', 'DC', 'Train', 'Infer', 'Gov', 'Tool'];
+const VERDICT_COLORS = { Excellent: { bg: '#065f46', text: '#6ee7b7', border: '#10b981', chart: '#10b981' }, Mixed: { bg: '#78350f', text: '#fbbf24', border: '#f59e0b', chart: '#f59e0b' }, Poor: { bg: '#7c2d12', text: '#fdba74', border: '#f97316', chart: '#f97316' }, Avoid: { bg: '#7f1d1d', text: '#fca5a5', border: '#ef4444', chart: '#ef4444' } };
+
+const providers = [
+  { id:'local-setup', name:'Hermes CLI + Gemma 4 (local, solar)', scores:[3,5,4,5,4,5], total:28, verdict:'Excellent',
+    tradeoffs:'Model quality caps at 7B–13B level vs frontier models. Not suitable for every task — use cloud for complex research.',
+    gaps:['Smaller model size means lower quality on complex reasoning vs cloud frontier models','No per-query energy tracking built in'],
+    sources:['Home solar + M4 MacBook Air — personal setup logs','Ollama + llama.cpp — open-source local inference','Gemma 4 8B (Q4_K_M) — ~5.4GB RAM, ~15-30W sustained'] },
+  { id:'meta-llama', name:'Meta (Llama)', scores:[2,3,4,4,3,4], total:20, verdict:'Mixed',
+    tradeoffs:'Best-in-class training transparency, but Meta\'s corporate record on privacy and labor is mixed. Custom license restricts some uses.',
+    gaps:['No per-query inference energy published','No full lifecycle carbon assessment for any Llama model','Water concerns in drought-prone data center regions (Los Lunas, NM)'],
+    sources:['Meta Sustainability Reports — sustainability.fb.com','Llama 3 Model Card — AI.meta.com','Llama 3.1 Technical Report — arXiv:2407.21783','Open Compute Project — opencompute.org'] },
+  { id:'google-deepmind', name:'Google DeepMind (Gemini)', scores:[3,3,2,4,3,2], total:17, verdict:'Mixed',
+    tradeoffs:'Custom TPU silicon reduces NVIDIA dependency. On-device Nano is great. But emissions up 48% since 2019, water up 20%.',
+    gaps:['Training energy not disclosed for Gemini','GHG emissions up 48% (2019-2023) — 14.3M tCO2e in 2023','Water consumption up 20% — 5.6B gallons in 2023','Carbon neutral claim relies on offsets, not actual reductions'],
+    sources:['Google 2024 Environmental Report','DeepMind cooling optimization research (2016)','Chinchilla scaling laws — DeepMind'] },
+  { id:'anthropic-claude', name:'Anthropic (Claude)', scores:[2,3,2,3,3,3], total:16, verdict:'Mixed',
+    tradeoffs:'Model size choice (Haiku/Sonnet/Opus) lets you reduce impact. Benefit corp structure. But cloud-only, training opaque, no sustainability report.',
+    gaps:['No training energy or per-query energy published','No public dataset card for Claude models','No dedicated sustainability report from Anthropic','Cloud-only — no local inference option'],
+    sources:['Anthropic sustainability page — anthropic.com/sustainability','Google Environmental Report 2024 (GCP hosting)','TechCrunch — Anthropic infrastructure coverage'] },
+  { id:'deepseek-v4', name:'DeepSeek V4 Flash', scores:[2,1,3,4,2,3], total:15, verdict:'Poor',
+    tradeoffs:'Most efficient architecture (MoE, MLA) but coal-heavy Chinese grid (~60%) negates the efficiency gains. Efficiency claims unverified.',
+    gaps:['~60% coal grid in Chinese data centers','No PUE, carbon, or grid mix disclosure','Efficiency claims not independently verified','Must comply with Chinese state data access requests'],
+    sources:['DeepSeek technical papers — arxiv.org','Semianalysis — DeepSeek cost analysis','CSIS export control reports on H800 restrictions'] },
+  { id:'mistral-ai', name:'Mistral AI', scores:[2,2,1,4,3,3], total:15, verdict:'Poor',
+    tradeoffs:'Excellent MoE efficiency (Mixtral ~13B active params), open-weight Apache 2.0. But zero sustainability disclosure, no training energy data.',
+    gaps:['No training energy or per-query energy published','No sustainability report of any kind','Cloud hosting on Azure/GCP/AWS — inherits their footprints','Custom license for Mistral Large'],
+    sources:['Mistral blog — mistral.ai','Microsoft partnership announcements','External efficiency estimates'] },
+  { id:'claude-desktop', name:'Claude Desktop', scores:[2,3,2,3,3,2], total:15, verdict:'Poor',
+    tradeoffs:'Same infrastructure as Claude API but worse tool design — no per-task model routing, always uses Opus-class models.',
+    gaps:['No per-task model choice (always uses largest model)','Cloud-only thin client with no efficiency controls','Same training opacity as Anthropic','No local fallback option'],
+    sources:['Anthropic documentation','Same infrastructure as Anthropic Claude API'] },
+  { id:'openai-codex', name:'OpenAI Codex CLI', scores:[2,2,1,3,2,3], total:13, verdict:'Poor',
+    tradeoffs:'Best tool design among cloud agents (open-source, Rust, configurable model). But heaviest training footprint, water-heavy Azure DCs, active copyright litigation.',
+    gaps:['OpenAI: no training energy published (GPT-4 est. $100M+ compute)','Azure Iowa DC consumed ~6% of local water district supply','Active lawsuits: NYT, Authors Guild','Data labeling: reported Kenyan workers at ~$2/hr'],
+    sources:['Microsoft 2024 Environmental Report','Des Moines Register — water usage coverage','Time magazine (2023) — labeling labor investigation','Codex CLI GitHub repo'] },
+  { id:'xai-grok', name:'xAI (Grok)', scores:[2,1,1,2,1,1], total:8, verdict:'Avoid',
+    tradeoffs:'Diesel generators without emissions controls in South Memphis (environmental justice community). Active SELC lawsuit. Zero transparency across all dimensions.',
+    gaps:['Active SELC lawsuit — Memphis Community Against Pollution','Diesel backup generators without emissions controls','Zero sustainability reporting','No model choice — single massive model only','Environmental justice concerns — South Memphis is predominantly Black and low-income'],
+    sources:['SELC press releases (selcva.org, 2024)','Memphis Commercial Appeal reporting','WREG Memphis — local news coverage'] }
+];
+
+// ====== STATE ======
+let sortCol = 'total';
+let sortDir = -1;
+let activeFilter = 'all';
+let selectedId = null;
+let barChartInstance = null;
+let radarChartInstance = null;
+
+// ====== RENDER TABLE ======
+function renderTable() {
+  const tbody = document.getElementById('table-body');
+  let filtered = activeFilter === 'all' ? providers : providers.filter(p => p.verdict === activeFilter);
+  const sorted = [...filtered].sort((a,b) => {
+    let va, vb;
+    if (sortCol === 'name') { va = a.name.toLowerCase(); vb = b.name.toLowerCase(); return va < vb ? -sortDir : va > vb ? sortDir : 0; }
+    else if (sortCol === 'verdict') { const order = ['Excellent','Mixed','Poor','Avoid']; va = order.indexOf(a.verdict); vb = order.indexOf(b.verdict); }
+    else if (sortCol === 'total') { va = a.total; vb = b.total; }
+    else { const idx = DIMENSION_SHORT.map(d=>d.toLowerCase()).indexOf(sortCol); va = a.scores[idx]; vb = b.scores[idx]; }
+    return (va - vb) * sortDir;
+  });
+  tbody.innerHTML = sorted.map(p => {
+    const c = VERDICT_COLORS[p.verdict];
+    const sel = selectedId === p.id ? 'selected-row' : '';
+    const dims = p.scores.map((s,i) => `<td class="text-center py-3 px-2 text-slate-300 text-xs">${s}</td>`).join('');
+    return `<tr class="cursor-pointer hover:bg-slate-700/50 transition-colors ${sel}" data-id="${p.id}">
+      <td class="py-3 px-4 text-sm font-medium text-white">${p.name}</td>
+      ${dims}
+      <td class="text-center py-3 px-3 font-bold text-white">${p.total}</td>
+      <td class="text-center py-3 px-3"><span class="verdict-badge" style="background:${c.bg};color:${c.text}">${p.verdict}</span></td>
+    </tr>`;
+  }).join('');
+  // click handlers
+  tbody.querySelectorAll('tr').forEach(tr => {
+    tr.addEventListener('click', () => { selectProvider(tr.dataset.id); });
+  });
+  updateSortIcons();
+}
+
+function updateSortIcons() {
+  document.querySelectorAll('.sortable .sort-icon').forEach(el => el.classList.remove('sort-active'));
+  const th = document.querySelector(`.sortable[data-col="${sortCol}"] .sort-icon`);
+  if (th) { th.classList.add('sort-active'); th.textContent = sortDir === -1 ? '↓' : '↑'; }
+}
+
+// ====== FILTER PILLS ======
+document.querySelectorAll('#filter-pills .pill').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#filter-pills .pill').forEach(b => { b.classList.remove('ring-2', 'ring-emerald-500', 'bg-slate-600'); b.classList.add('bg-slate-700'); });
+    btn.classList.remove('bg-slate-700'); btn.classList.add('ring-2', 'ring-emerald-500', 'bg-slate-600');
+    activeFilter = btn.dataset.filter;
+    renderTable();
+    renderBarChart();
+  });
+});
+document.querySelector('#filter-pills .pill[data-filter="all"]').click();
+
+// ====== SORTABLE HEADERS ======
+document.querySelectorAll('.sortable').forEach(th => {
+  th.addEventListener('click', () => {
+    const col = th.dataset.col;
+    if (sortCol === col) sortDir *= -1;
+    else { sortCol = col; sortDir = -1; }
+    renderTable();
+  });
+});
+
+// ====== SELECT / REPORT ======
+function selectProvider(id) {
+  selectedId = id;
+  const p = providers.find(x => x.id === id);
+  if (!p) return;
+  renderTable();
+  renderBarChart();
+  showReport(p);
+  document.getElementById('provider-select').value = id;
+  document.getElementById('report-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function showReport(p) {
+  const panel = document.getElementById('report-panel');
+  document.getElementById('report-name').textContent = p.name;
+  document.getElementById('report-total').textContent = `${p.total}/30`;
+  const vc = VERDICT_COLORS[p.verdict];
+  const badge = document.getElementById('report-verdict');
+  badge.textContent = p.verdict;
+  badge.style.background = vc.bg;
+  badge.style.color = vc.text;
+
+  document.getElementById('report-tradeoffs').textContent = p.tradeoffs;
+  document.getElementById('report-gaps').innerHTML = p.gaps.map(g => `<li>${g}</li>`).join('');
+  document.getElementById('report-sources').innerHTML = p.sources.map(s => `<li>${s}</li>`).join('');
+
+  // dimension breakdown
+  const dimsEl = document.getElementById('report-dimensions');
+  dimsEl.innerHTML = p.scores.map((s,i) => {
+    const barWidth = (s/5)*100;
+    const barColor = s >= 4 ? '#10b981' : s >= 3 ? '#f59e0b' : s >= 2 ? '#f97316' : '#ef4444';
+    return `<div>
+      <div class="flex justify-between text-xs mb-1"><span class="text-slate-400">${DIMENSION_LABELS[i]}</span><span class="font-medium text-slate-200">${s}/5</span></div>
+      <div class="bg-slate-700 rounded-full h-2 overflow-hidden"><div class="h-full rounded-full transition-all duration-500" style="width:${barWidth}%;background:${barColor}"></div></div>
+    </div>`;
+  }).join('');
+
+  panel.classList.add('open');
+  renderRadarChart(p);
+}
+
+function closeReport() {
+  document.getElementById('report-panel').classList.remove('open');
+  selectedId = null;
+  document.getElementById('provider-select').value = '';
+  renderTable();
+  renderBarChart();
+}
+
+// ====== DROPDOWN ======
+const select = document.getElementById('provider-select');
+providers.forEach(p => {
+  const opt = document.createElement('option');
+  opt.value = p.id;
+  opt.textContent = `${p.name}  —  ${p.total}/30 (${p.verdict})`;
+  select.appendChild(opt);
+});
+select.addEventListener('change', () => {
+  if (select.value) selectProvider(select.value);
+  else closeReport();
+});
+
+// ====== BAR CHART ======
+function renderBarChart() {
+  const ctx = document.getElementById('barChart').getContext('2d');
+  let filtered = activeFilter === 'all' ? providers : providers.filter(p => p.verdict === activeFilter);
+  const labels = filtered.map(p => p.name.replace(/\(.*?\)/g, m => m.length > 20 ? m.substring(0,18)+'…' : m));
+  const data = filtered.map(p => p.total);
+  const colors = filtered.map(p => {
+    const c = VERDICT_COLORS[p.verdict]; return selectedId === p.id ? '#34d399' : c.chart;
+  });
+  const bgColors = filtered.map(p => {
+    const c = VERDICT_COLORS[p.verdict]; return selectedId === p.id ? 'rgba(52,211,153,0.3)' : c.chart + '33';
+  });
+
+  if (barChartInstance) barChartInstance.destroy();
+  barChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets: [{ label: 'Total Score', data, backgroundColor: bgColors, borderColor: colors, borderWidth: 2, borderRadius: 4, barThickness: 28 }] },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { backgroundColor: '#1e293b', titleColor: '#e2e8f0', bodyColor: '#94a3b8', borderColor: '#334155', borderWidth: 1, cornerRadius: 8, callbacks: { label: ctx => `${ctx.raw}/30` } } },
+      scales: { x: { min: 0, max: 30, ticks: { stepSize: 5, color: '#64748b', font: { size: 11 } }, grid: { color: '#334155' } }, y: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { display: false } } }
+    }
+  });
+}
+
+// ====== RADAR CHART ======
+function renderRadarChart(p) {
+  const ctx = document.getElementById('radarChart').getContext('2d');
+  if (radarChartInstance) radarChartInstance.destroy();
+  const vc = VERDICT_COLORS[p.verdict];
+  radarChartInstance = new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: DIMENSION_SHORT,
+      datasets: [{
+        label: p.name.substring(0,20)+'…',
+        data: p.scores,
+        backgroundColor: vc.chart + '22',
+        borderColor: vc.chart,
+        borderWidth: 2,
+        pointBackgroundColor: vc.chart,
+        pointRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { backgroundColor: '#1e293b', titleColor: '#e2e8f0', bodyColor: '#94a3b8', borderColor: '#334155', borderWidth: 1, cornerRadius: 8, callbacks: { label: ctx => `${DIMENSION_LABELS[ctx.dataIndex]}: ${ctx.raw}/5` } } },
+      scales: {
+        r: { min: 0, max: 5, ticks: { stepSize: 1, color: '#64748b', backdropColor: 'transparent', font: { size: 10 } }, grid: { color: '#334155' }, angleLines: { color: '#334155' }, pointLabels: { color: '#94a3b8', font: { size: 11, weight: '500' } } }
+      }
+    }
+  });
+}
+
+// ====== INIT ======
+window.addEventListener('load', () => {
+  renderTable();
+  renderBarChart();
+});
+</script>
+</body>
+</html>
