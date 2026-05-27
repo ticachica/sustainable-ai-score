@@ -107,3 +107,9 @@ The framework was developed to make informed choices about which AI tools align 
 ---
 
 *Last updated: May 26, 2026 · 9 providers evaluated · All data publicly sourced*
+
+---
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
