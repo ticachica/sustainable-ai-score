@@ -242,35 +242,35 @@ const providers = [
   { id:'meta-llama', name:'Meta (Llama)', scores:[2,3,4,4,3,4], total:20, verdict:'Mixed',
     tradeoffs:'Best-in-class training transparency, but Meta\'s corporate record on privacy and labor is mixed. Custom license restricts some uses.',
     gaps:['No per-query inference energy published','No full lifecycle carbon assessment for any Llama model','Water concerns in drought-prone data center regions (Los Lunas, NM)'],
-    sources:['Meta Sustainability Reports — sustainability.fb.com','Llama 3 Model Card — AI.meta.com','Llama 3.1 Technical Report — arXiv:2407.21783','Open Compute Project — opencompute.org'] },
+    sources:['Meta Sustainability Reports — https://sustainability.fb.com','Llama 3 Model Card — https://ai.meta.com/blog/meta-llama-3/','Llama 3.1 Technical Report — https://arxiv.org/abs/2407.21783','Open Compute Project — https://www.opencompute.org/'] },
   { id:'google-deepmind', name:'Google DeepMind (Gemini)', scores:[3,3,2,4,3,2], total:17, verdict:'Mixed',
     tradeoffs:'Custom TPU silicon reduces NVIDIA dependency. On-device Nano is great. But emissions up 48% since 2019, water up 20%.',
     gaps:['Training energy not disclosed for Gemini','GHG emissions up 48% (2019-2023) — 14.3M tCO2e in 2023','Water consumption up 20% — 5.6B gallons in 2023','Carbon neutral claim relies on offsets, not actual reductions'],
-    sources:['Google 2024 Environmental Report','DeepMind cooling optimization research (2016)','Chinchilla scaling laws — DeepMind'] },
+    sources:['Google 2024 Environmental Report — https://sustainability.google/reports/','DeepMind cooling optimization research — https://deepmind.google','Chinchilla scaling laws — https://arxiv.org/abs/2203.15556'] },
   { id:'anthropic-claude', name:'Anthropic (Claude)', scores:[2,3,2,3,3,3], total:16, verdict:'Mixed',
     tradeoffs:'Model size choice (Haiku/Sonnet/Opus) lets you reduce impact. Benefit corp structure. But cloud-only, training opaque, no sustainability report.',
     gaps:['No training energy or per-query energy published','No public dataset card for Claude models','No dedicated sustainability report from Anthropic','Cloud-only — no local inference option'],
-    sources:['Anthropic sustainability page — anthropic.com/sustainability','Google Environmental Report 2024 (GCP hosting)','TechCrunch — Anthropic infrastructure coverage'] },
+    sources:['Anthropic sustainability — https://anthropic.com/sustainability','Google Environmental Report 2024 — https://sustainability.google/reports/','TechCrunch — Anthropic infrastructure'] },
   { id:'deepseek-v4', name:'DeepSeek V4 Flash', scores:[2,1,3,4,2,3], total:15, verdict:'Poor',
     tradeoffs:'Most efficient architecture (MoE, MLA) but coal-heavy Chinese grid (~60%) negates the efficiency gains. Efficiency claims unverified.',
     gaps:['~60% coal grid in Chinese data centers','No PUE, carbon, or grid mix disclosure','Efficiency claims not independently verified','Must comply with Chinese state data access requests'],
-    sources:['DeepSeek technical papers — arxiv.org','Semianalysis — DeepSeek cost analysis','CSIS export control reports on H800 restrictions'] },
+    sources:['DeepSeek technical papers — https://arxiv.org/search/?query=deepseek&searchtype=all','Semianalysis — https://semianalysis.com','CSIS export control reports — https://www.csis.org'] },
   { id:'mistral-ai', name:'Mistral AI', scores:[2,2,1,4,3,3], total:15, verdict:'Poor',
     tradeoffs:'Excellent MoE efficiency (Mixtral ~13B active params), open-weight Apache 2.0. But zero sustainability disclosure, no training energy data.',
     gaps:['No training energy or per-query energy published','No sustainability report of any kind','Cloud hosting on Azure/GCP/AWS — inherits their footprints','Custom license for Mistral Large'],
-    sources:['Mistral blog — mistral.ai','Microsoft partnership announcements','External efficiency estimates'] },
+    sources:['Mistral blog — https://mistral.ai/news/','Microsoft partnership announcements — https://news.microsoft.com','External efficiency estimates'] },
   { id:'claude-desktop', name:'Claude Desktop', scores:[2,3,2,3,3,2], total:15, verdict:'Poor',
     tradeoffs:'Same infrastructure as Claude API but worse tool design — no per-task model routing, always uses Opus-class models.',
     gaps:['No per-task model choice (always uses largest model)','Cloud-only thin client with no efficiency controls','Same training opacity as Anthropic','No local fallback option'],
-    sources:['Anthropic documentation','Same infrastructure as Anthropic Claude API'] },
+    sources:['Anthropic documentation — https://docs.anthropic.com','Same infrastructure as Anthropic Claude API'] },
   { id:'openai-codex', name:'OpenAI Codex CLI', scores:[2,2,1,3,2,3], total:13, verdict:'Poor',
     tradeoffs:'Best tool design among cloud agents (open-source, Rust, configurable model). But heaviest training footprint, water-heavy Azure DCs, active copyright litigation.',
     gaps:['OpenAI: no training energy published (GPT-4 est. $100M+ compute)','Azure Iowa DC consumed ~6% of local water district supply','Active lawsuits: NYT, Authors Guild','Data labeling: reported Kenyan workers at ~$2/hr'],
-    sources:['Microsoft 2024 Environmental Report','Des Moines Register — water usage coverage','Time magazine (2023) — labeling labor investigation','Codex CLI GitHub repo'] },
+    sources:['Microsoft 2024 Environmental Report — https://blogs.microsoft.com/on-the-issues/','Des Moines Register — Iowa water usage','Time magazine (2023) — labeling labor investigation','Codex CLI — https://github.com/openai/codex'] },
   { id:'xai-grok', name:'xAI (Grok)', scores:[2,1,1,2,1,1], total:8, verdict:'Avoid',
     tradeoffs:'Diesel generators without emissions controls in South Memphis (environmental justice community). Active SELC lawsuit. Zero transparency across all dimensions.',
     gaps:['Active SELC lawsuit — Memphis Community Against Pollution','Diesel backup generators without emissions controls','Zero sustainability reporting','No model choice — single massive model only','Environmental justice concerns — South Memphis is predominantly Black and low-income'],
-    sources:['SELC press releases (selcva.org, 2024)','Memphis Commercial Appeal reporting','WREG Memphis — local news coverage'] }
+    sources:['SELC press releases — https://www.selcva.org','Memphis Commercial Appeal — https://www.commercialappeal.com','WREG Memphis — https://www.wreg.com'] }
 ];
 
 // ====== STATE ======
@@ -361,9 +361,18 @@ function showReport(p) {
   badge.style.background = vc.bg;
   badge.style.color = vc.text;
 
+  // linkify text — detect URLs and domains
+  function linkify(text) {
+    // match full URLs starting with http(s)
+    text = text.replace(/(https?:\/\/[^\s)]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-emerald-400 hover:text-emerald-300 underline">$1</a>');
+    // match domain-like references (e.g. sustainability.fb.com, arxiv.org)
+    text = text.replace(/\b((?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+(?:com|org|net|edu|gov|io|dev|app|ai)\b)/gi, '<a href="https://$1" target="_blank" rel="noopener noreferrer" class="text-emerald-400 hover:text-emerald-300 underline">$1</a>');
+    return text;
+  }
+
   document.getElementById('report-tradeoffs').textContent = p.tradeoffs;
   document.getElementById('report-gaps').innerHTML = p.gaps.map(g => `<li>${g}</li>`).join('');
-  document.getElementById('report-sources').innerHTML = p.sources.map(s => `<li>${s}</li>`).join('');
+  document.getElementById('report-sources').innerHTML = p.sources.map(s => `<li>${linkify(s)}</li>`).join('');
 
   // dimension breakdown
   const dimsEl = document.getElementById('report-dimensions');
