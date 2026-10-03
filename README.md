@@ -88,8 +88,11 @@ Generated from `data/providers.json`.
 |----------|:-----:|------|
 | Hermes CLI + Gemma 4 (local, solar) | 28/30 | Excellent |
 | Mistral AI | 22/30 | Good |
+| Groq | 20/30 | Mixed |
 | Meta (Llama) | 20/30 | Mixed |
+| Alibaba Qwen | 19/30 | Mixed |
 | Google DeepMind (Gemini) | 19/30 | Mixed |
+| Microsoft Copilot (M365 + GitHub) | 19/30 | Mixed |
 | DeepSeek V4 Flash | 18/30 | Mixed |
 | Anthropic (Claude) | 16/30 | Mixed |
 | Claude Desktop | 16/30 | Mixed |
