@@ -17,9 +17,10 @@ sustainable-ai-score/
 ├── index.html                    # the app: layout, styling, rendering
 ├── data/
 │   └── providers.json            # single source of truth for all evaluations
-├── functions/
-│   └── api/
-│       └── providers.js          # GET /api/providers (Cloudflare Pages Function)
+├── src/
+│   └── worker.js                 # serves GET /api/providers, falls through to assets
+├── wrangler.jsonc                # Worker config: script entry point plus assets binding
+├── .assetsignore                 # keeps internal files out of the public asset upload
 ├── LICENSE
 └── README.md
 ```
@@ -29,17 +30,17 @@ Data flow:
 ```
 data/providers.json
         │
-        ├──▶ functions/api/providers.js   ──▶  GET /api/providers   (preferred)
+        ├──▶ src/worker.js  ──reads via ASSETS──▶  GET /api/providers   (preferred)
         │
-        └──▶ served as a static asset     ──▶  GET /data/providers.json (fallback)
+        └──▶ served as a static asset          ──▶  GET /data/providers.json (fallback)
                         │
                         ▼
                   index.html fetches, then renders
 ```
 
-`index.html` requests `/api/providers` first and falls back to `/data/providers.json` if the endpoint is unavailable, so the page still works when it is opened directly from disk or deployed somewhere without functions.
+`index.html` requests `/api/providers` first and falls back to `/data/providers.json` if the endpoint is unavailable, so the page still works when it is opened directly from disk or hosted somewhere without a Worker.
 
-Cloudflare Pages Functions run on the same Workers runtime as Cloudflare's edge, so `/api/providers` is an edge API endpoint colocated with the static site. It has no database and no third party dependencies: it validates and serves the dataset with CORS and cache headers.
+The deployment is a single Cloudflare Worker. Files in the repo are served as static assets through the `ASSETS` binding, and `src/worker.js` only runs for requests that do not match a file, which is how `/api/providers` is answered. The endpoint reads the dataset back through `ASSETS` rather than duplicating it, so `data/providers.json` remains the single source of truth. There is no database and no third party dependency: the Worker validates the JSON before serving it and returns CORS and cache headers.
 
 ---
 
@@ -132,13 +133,13 @@ Notes on the format:
 - **Vanilla HTML, CSS, and JavaScript.** No build step, no framework, no bundler.
 - **Chart.js** (CDN) for the bar chart and radar chart.
 - **Tailwind CSS** (CDN) for styling, with a small custom layer for cards, tiers, and charts.
-- **Cloudflare Pages** for hosting, plus one Pages Function for the API endpoint.
+- **Cloudflare Workers** for hosting, with one small Worker script serving the API endpoint.
 
 ---
 
 ## Local development
 
-Any static file server works. The page will fall back to the static JSON when no API route exists.
+Any static file server works. The page falls back to the static JSON when no API route exists.
 
 ```bash
 git clone https://github.com/ticachica/sustainable-ai-score.git
@@ -147,10 +148,10 @@ python3 -m http.server 8000
 # open http://localhost:8000
 ```
 
-To exercise the API endpoint locally as well, use the Cloudflare tooling:
+To exercise the Worker and the `/api/providers` endpoint locally, run it through the Cloudflare tooling instead:
 
 ```bash
-npx wrangler pages dev .
+npx wrangler dev
 ```
 
 ---
@@ -160,14 +161,23 @@ npx wrangler pages dev .
 1. Edit `data/providers.json`. Keep dimension values as integers from 1 to 5.
 2. Set `lastReviewed` on each provider you touched and describe the change in `changeNotes`.
 3. Update `meta.lastUpdated`.
-4. Validate before committing. The scores, tiers, and sources are checked as follows:
+4. Validate the dataset before committing. Check that every dimension is an integer from 1 to 5, that the summed total falls in the right tier, and that the declared `verdict` matches that tier:
 
 ```bash
-node --input-type=module -e "JSON.parse(require('fs').readFileSync('data/providers.json','utf8'))" 2>/dev/null || \
-  node -e "JSON.parse(require('fs').readFileSync('data/providers.json','utf8')); console.log('valid JSON')"
+node -e "
+const d = JSON.parse(require('fs').readFileSync('data/providers.json','utf8'));
+const keys = d.dimensions.map(x => x.key);
+let bad = 0;
+for (const p of d.providers) {
+  const total = keys.reduce((s,k) => s + p.scores[k], 0);
+  const tier = d.tiers.find(t => total >= t.min && total <= t.max);
+  if (!tier || tier.name !== p.verdict) { console.log('MISMATCH', p.id, total, p.verdict); bad++; }
+}
+console.log(bad ? bad + ' problem(s)' : 'dataset OK: ' + d.providers.length + ' providers');
+"
 ```
 
-5. Commit and push to `main`. Cloudflare redeploys automatically in about 30 seconds.
+5. Commit and push to `main`. Cloudflare rebuilds and redeploys the Worker automatically in about 30 to 60 seconds.
 
 The dataset is the only file that changes during a routine refresh. The front end reads the dimension list, tier ladder, insights, and personal setup from the same file, so adding a provider or renaming a tier does not require code changes.
 
@@ -175,7 +185,7 @@ The dataset is the only file that changes during a routine refresh. The front en
 
 ## Phase 2 (planned)
 
-Free-form input where a user types any provider and gets an AI-generated evaluation on demand. The intended backend is a Cloudflare Worker calling an LLM with web search, returning the same JSON shape the front end already renders. No API keys are used in the current build.
+Free-form input where a user types any provider and gets an AI-generated evaluation on demand. The intended backend is an LLM call with web search, returning the same JSON shape the front end already renders. No API keys are used in the current build.
 
 See `1. Projects/Sustainable AI Evaluation/Interactive Webpage Plan.md` in the Obsidian vault for the full plan.
 

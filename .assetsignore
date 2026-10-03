@@ -1,0 +1,8 @@
+# Files that should NOT be uploaded as public static assets.
+# Everything else in the repo root is served by the Worker's ASSETS binding.
+.git
+.gitignore
+.research
+src
+wrangler.jsonc
+node_modules
