@@ -2,99 +2,201 @@
 
 **See how your AI stack really stacks up.**
 
-A 6-dimension framework rating AI providers and tools on environmental and societal sustainability. Interactive web app — explore scores, filter by category, compare radar charts, and view full evaluation reports.
+A 6-dimension framework rating AI providers and tools on environmental and societal sustainability. Interactive web app to explore scores, filter by tier, compare dimension profiles, and read full evaluation reports with sources.
 
 **Live site:** https://sustainable-ai-score.jarguello.workers.dev
 
 ---
 
-## The Framework
+## How it works
 
-Every provider is scored across six dimensions, each rated 1–5:
+The site is data driven. Provider evaluations live in a single JSON dataset that the page fetches at runtime, so scores and source citations can be updated without touching the front end.
 
-| Dimension | What It Measures |
-|-----------|-----------------|
-| **Hardware & Manufacturing** | Supply chain ethics, conflict minerals, manufacturing practices |
-| **Data Center Operations** | Energy sources, water usage, grid carbon intensity, community impact |
-| **Training Footprint** | Training compute disclosed, dataset ethics, labeling labor conditions |
-| **Inference Efficiency** | Model size choices, quantization, local inference support |
-| **Company Governance** | Transparency, open-source philosophy, labor practices |
-| **Tool/Agent Design** | Local-first capability, caching, model routing, efficiency features |
+```
+sustainable-ai-score/
+├── index.html                    # the app: layout, styling, rendering
+├── data/
+│   └── providers.json            # single source of truth for all evaluations
+├── functions/
+│   └── api/
+│       └── providers.js          # GET /api/providers (Cloudflare Pages Function)
+├── LICENSE
+└── README.md
+```
 
-**Total possible:** 6–30 | **Higher is better**
+Data flow:
 
-### Scoring Tiers
+```
+data/providers.json
+        │
+        ├──▶ functions/api/providers.js   ──▶  GET /api/providers   (preferred)
+        │
+        └──▶ served as a static asset     ──▶  GET /data/providers.json (fallback)
+                        │
+                        ▼
+                  index.html fetches, then renders
+```
 
-| Score | Verdict |
-|-------|---------|
-| 26–30 | Excellent |
-| 21–25 | Good |
-| 16–20 | Mixed |
-| 10–15 | Poor |
-| 6–9 | Avoid |
+`index.html` requests `/api/providers` first and falls back to `/data/providers.json` if the endpoint is unavailable, so the page still works when it is opened directly from disk or deployed somewhere without functions.
 
-### Personal Modifiers
-
-Your actual sustainability score depends on your setup:
-- **+1 Hardware** if using existing device (avoiding manufacturing)
-- **+1 Data Center** if running local inference on solar/renewable power
+Cloudflare Pages Functions run on the same Workers runtime as Cloudflare's edge, so `/api/providers` is an edge API endpoint colocated with the static site. It has no database and no third party dependencies: it validates and serves the dataset with CORS and cache headers.
 
 ---
 
-## Providers Evaluated
+## The framework
 
-| Provider | Score | Verdict |
-|----------|:-----:|---------|
+Every provider is scored across six dimensions, each rated 1 to 5.
+
+| Dimension | What it measures |
+|-----------|------------------|
+| **Hardware & Manufacturing** | Supply chain ethics, conflict minerals, fab locations, forced labor risk, right to repair |
+| **Data Center Operations** | Grid carbon intensity, renewable matching quality, water use, community impact |
+| **Training Footprint** | Training compute and energy disclosed, dataset sourcing, labeling labor conditions |
+| **Inference Efficiency** | Model size choices, quantization, sparse architectures, local inference support |
+| **Company Governance** | Open versus closed weights, sustainability reporting, labor practices, litigation |
+| **Tool/Agent Design** | Local-first capability, caching, model routing, per-call cost transparency |
+
+**Total possible:** 6 to 30. Higher is better.
+
+### Scoring tiers
+
+| Score | Tier |
+|-------|------|
+| 26 to 30 | Excellent |
+| 21 to 25 | Good |
+| 16 to 20 | Mixed |
+| 10 to 15 | Poor |
+| 6 to 9 | Avoid |
+
+### Personal modifiers
+
+Provider scores describe the provider. Your own setup can score differently:
+
+- **+1 Hardware** for reusing an existing device, which avoids new manufacturing impact
+- **+1 Data Center** for local inference powered by solar or another site-generated renewable
+
+The "Your setup" section of the site applies these modifiers and shows the resulting score alongside the unmodified base.
+
+---
+
+## Providers evaluated
+
+Generated from `data/providers.json`.
+
+| Provider | Score | Tier |
+|----------|:-----:|------|
 | Hermes CLI + Gemma 4 (local, solar) | 28/30 | Excellent |
+| Mistral AI | 22/30 | Good |
 | Meta (Llama) | 20/30 | Mixed |
-| Google DeepMind (Gemini) | 17/30 | Mixed |
+| Google DeepMind (Gemini) | 19/30 | Mixed |
+| DeepSeek V4 Flash | 18/30 | Mixed |
 | Anthropic (Claude) | 16/30 | Mixed |
-| DeepSeek V4 Flash | 15/30 | Poor |
-| Mistral AI | 15/30 | Poor |
-| Claude Desktop | 15/30 | Poor |
-| OpenAI Codex CLI | 13/30 | Poor |
-| xAI (Grok) | 8/30 | Avoid |
+| Claude Desktop | 16/30 | Mixed |
+| OpenAI Codex CLI | 15/30 | Poor |
+| xAI / SpaceXAI (Grok) | 10/30 | Poor |
 
 ---
 
-## Tech Stack
+## Data model
 
-- **Vanilla HTML + CSS + JS** — zero build step, single file
-- **Chart.js** — radar and bar charts
-- **Tailwind CSS** (CDN) — styling
-- **Cloudflare Pages** — hosting (static deployment)
+Each provider in `data/providers.json` looks like this:
+
+```json
+{
+  "id": "example-provider",
+  "name": "Example Provider",
+  "kind": "provider",
+  "scores": { "hw": 2, "dc": 2, "train": 1, "infer": 4, "gov": 2, "tool": 4 },
+  "verdict": "Poor",
+  "summary": "One or two sentence characterisation.",
+  "tradeoffs": "What you gain weighed against what you give up.",
+  "gaps": ["Key open question one", "Key open question two"],
+  "sources": [
+    { "label": "Human readable source title", "url": "https://example.com" }
+  ],
+  "lastReviewed": "2026-10-03",
+  "changeNotes": "What changed since the previous review."
+}
+```
+
+Notes on the format:
+
+- Dimension keys are fixed and ordered: `hw`, `dc`, `train`, `infer`, `gov`, `tool`. The totals and tiers are computed at render time from `scores`, so they cannot drift out of sync with the dimension values.
+- Sources use `{label, url}` objects rather than bare URL strings, so citations render as readable links. A source with no public URL simply omits the `url` key and renders as plain text.
+- `lastReviewed` and `changeNotes` record when a provider was last re-checked and what moved.
 
 ---
 
-## Development
+## Tech stack
+
+- **Vanilla HTML, CSS, and JavaScript.** No build step, no framework, no bundler.
+- **Chart.js** (CDN) for the bar chart and radar chart.
+- **Tailwind CSS** (CDN) for styling, with a small custom layer for cards, tiers, and charts.
+- **Cloudflare Pages** for hosting, plus one Pages Function for the API endpoint.
+
+---
+
+## Local development
+
+Any static file server works. The page will fall back to the static JSON when no API route exists.
 
 ```bash
 git clone https://github.com/ticachica/sustainable-ai-score.git
 cd sustainable-ai-score
-open index.html    # works directly in browser
+python3 -m http.server 8000
+# open http://localhost:8000
 ```
 
-No build step, no package.json, no npm install. Just a single `index.html` loaded with CDN scripts.
+To exercise the API endpoint locally as well, use the Cloudflare tooling:
+
+```bash
+npx wrangler pages dev .
+```
 
 ---
 
-## Phase 2 (Future)
+## Updating the data
 
-Adding free-form provider input where users can submit a new AI provider/tool and get an AI-generated evaluation report on demand.
+1. Edit `data/providers.json`. Keep dimension values as integers from 1 to 5.
+2. Set `lastReviewed` on each provider you touched and describe the change in `changeNotes`.
+3. Update `meta.lastUpdated`.
+4. Validate before committing. The scores, tiers, and sources are checked as follows:
 
-Proposed backend: Vercel Serverless Function + OpenRouter API (LLM with web search capability). See the full plan at `1. Projects/Sustainable AI Evaluation/Interactive Webpage Plan.md` in the Obsidian vault.
+```bash
+node --input-type=module -e "JSON.parse(require('fs').readFileSync('data/providers.json','utf8'))" 2>/dev/null || \
+  node -e "JSON.parse(require('fs').readFileSync('data/providers.json','utf8')); console.log('valid JSON')"
+```
+
+5. Commit and push to `main`. Cloudflare redeploys automatically in about 30 seconds.
+
+The dataset is the only file that changes during a routine refresh. The front end reads the dimension list, tier ladder, insights, and personal setup from the same file, so adding a provider or renaming a tier does not require code changes.
 
 ---
 
-## Data Sources
+## Phase 2 (planned)
 
-All evaluations are based on publicly available information as of May 2026:
-- Provider sustainability reports and environmental disclosures
+Free-form input where a user types any provider and gets an AI-generated evaluation on demand. The intended backend is a Cloudflare Worker calling an LLM with web search, returning the same JSON shape the front end already renders. No API keys are used in the current build.
+
+See `1. Projects/Sustainable AI Evaluation/Interactive Webpage Plan.md` in the Obsidian vault for the full plan.
+
+---
+
+## Data sources
+
+Evaluations draw on publicly available information:
+
+- Provider sustainability and environmental reports
 - Academic papers (Luccioni et al., Patterson et al.)
 - News reporting and investigative journalism
-- Public legal records (lawsuits, regulatory filings)
+- Public legal records such as lawsuits and regulatory filings
 
-Full source citations are included in each provider's evaluation report.
+Every provider entry carries its own source list, visible in the report panel on the site.
+
+---
+
+## License
+
+MIT. See [LICENSE](LICENSE).
 
 ---
 
@@ -102,14 +204,4 @@ Full source citations are included in each provider's evaluation report.
 
 Built by **Jennifer Arguello** using the Sustainable AI Evaluation Framework.
 
-The framework was developed to make informed choices about which AI tools align with your values — because sustainability isn't just about the technology, it's about the systems, people, and planet behind it.
-
----
-
-*Last updated: May 26, 2026 · 9 providers evaluated · All data publicly sourced*
-
----
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+The framework exists to make informed choices about which AI tools align with your values, because sustainability is not only about the technology. It is about the systems, people, and planet behind it.

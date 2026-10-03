@@ -3,509 +3,809 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SustainableAI Score — See how your AI stack really stacks up.</title>
+  <title>SustainableAI Score | See how your AI stack really stacks up</title>
+  <meta name="description" content="A 6-dimension framework rating AI providers and tools on environmental and societal sustainability. Explore scores, compare providers, and read full evaluation reports with sources.">
+  <meta name="color-scheme" content="dark">
+  <meta property="og:title" content="SustainableAI Score">
+  <meta property="og:description" content="See how your AI stack really stacks up. A 6-dimension sustainability rating for AI providers and tools.">
+  <meta property="og:type" content="website">
+
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            ink: { 950: '#05090f', 900: '#070d19', 850: '#0a1120', 800: '#0e1729', 700: '#16233a' },
+            accent: { 400: '#34d399', 500: '#10b981', 600: '#059669' }
+          },
+          fontFamily: { sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'] }
+        }
+      }
+    };
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
   <style>
-    * { scroll-behavior: smooth; }
-    body { font-family: 'Inter', sans-serif; }
-    .chart-container { position: relative; height: 300px; width: 100%; }
-    .chart-container-radar { position: relative; height: 280px; width: 100%; max-width: 400px; margin: 0 auto; }
-    .pill-active { ring: 2px solid currentColor; }
-    .sort-icon { opacity: 0.3; margin-left: 4px; font-size: 0.7em; }
-    .sort-active { opacity: 1; }
-    .detail-panel { display: none; }
-    .detail-panel.open { display: block; }
+    :root {
+      --surface: rgba(15, 23, 42, 0.62);
+      --surface-2: rgba(22, 35, 58, 0.5);
+      --hairline: rgba(148, 163, 184, 0.14);
+    }
+    html { scroll-behavior: smooth; scroll-padding-top: 5rem; }
+    body { background-color: #070d19; font-family: 'Inter', system-ui, sans-serif; }
+    .bg-aurora {
+      background:
+        radial-gradient(900px 500px at 12% -8%, rgba(16, 185, 129, 0.16), transparent 60%),
+        radial-gradient(800px 480px at 88% 4%, rgba(56, 189, 248, 0.10), transparent 62%),
+        radial-gradient(700px 600px at 50% 100%, rgba(16, 185, 129, 0.07), transparent 65%);
+    }
+    .bg-grid {
+      background-image:
+        linear-gradient(to right, rgba(148, 163, 184, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
+      background-size: 56px 56px;
+      mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 85%);
+      -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 85%);
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--hairline);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .card-flat { background: var(--surface-2); border: 1px solid var(--hairline); }
+    .gradient-text {
+      background: linear-gradient(120deg, #6ee7b7 0%, #34d399 40%, #10b981 80%);
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent; color: transparent;
+    }
+    .ring-focus:focus-visible { outline: 2px solid #34d399; outline-offset: 2px; }
+    .chart-box { position: relative; height: 340px; width: 100%; }
+    .chart-box-radar { position: relative; height: 300px; width: 100%; }
+    .sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+    .sortable:hover { color: #e2e8f0; }
+    .sort-icon { opacity: 0.25; margin-left: 3px; font-size: 0.7em; }
+    .sort-active { opacity: 1; color: #34d399; }
     .report-panel { display: none; }
-    .report-panel.open { display: block; }
-    .gradient-text { background: linear-gradient(135deg, #10b981, #34d399, #6ee7b7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .gradient-bg { background: linear-gradient(135deg, #064e3b, #065f46, #047857); }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    .fade-in { animation: fadeIn 0.4s ease-out; }
-    @keyframes slideDown { from { opacity: 0; max-height: 0; } to { opacity: 1; max-height: 2000px; } }
-    .slide-down { animation: slideDown 0.4s ease-out; }
-    .bar-highlight { filter: brightness(1.3); }
-    tr.selected-row { outline: 2px solid #10b981; outline-offset: -2px; border-radius: 8px; }
-    .verdict-badge { padding: 2px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; }
+    .report-panel.open { display: block; animation: rise 0.35s ease-out; }
+    @keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    .tier-badge { padding: 2px 10px; border-radius: 999px; font-size: 0.72rem; font-weight: 600; white-space: nowrap; border: 1px solid transparent; }
+    .row-selected { box-shadow: inset 3px 0 0 0 #34d399; background: rgba(16,185,129,0.06); }
+    .bar-track { height: 6px; border-radius: 999px; background: rgba(148,163,184,0.16); overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 999px; transition: width 0.5s ease; }
+    .pill { border: 1px solid var(--hairline); color: #94a3b8; background: rgba(148,163,184,0.05); transition: all 0.15s ease; }
+    .pill:hover { color: #e2e8f0; border-color: rgba(148,163,184,0.3); }
+    .pill-active { color: #052e21 !important; background: #34d399 !important; border-color: #34d399 !important; font-weight: 600; }
+    .tier-scale { display: flex; height: 8px; border-radius: 999px; overflow: hidden; }
+    .tier-scale > div { flex: 1; }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+    }
   </style>
 </head>
-<body class="bg-slate-900 text-slate-200 antialiased">
+<body class="bg-ink-900 text-slate-200 antialiased selection:bg-emerald-400/30">
 
-  <!-- ====== HERO ====== -->
-  <header class="relative overflow-hidden">
-    <div class="absolute inset-0 gradient-bg opacity-20"></div>
-    <div class="relative max-w-6xl mx-auto px-4 py-16 sm:py-24 text-center">
-      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-900/40 text-emerald-300 text-xs font-medium mb-6 border border-emerald-700/30">
-        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-        Open Beta
-      </div>
-      <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight mb-4">
-        <span class="gradient-text">SustainableAI Score</span>
-      </h1>
-      <p class="text-lg sm:text-xl text-slate-400 max-w-2xl mx-auto mb-2">See how your AI stack really stacks up.</p>
-      <p class="text-sm text-slate-500 max-w-xl mx-auto mb-10">A 6-dimension framework rating AI providers and tools on environmental and societal sustainability. Higher is better.</p>
-      <div class="flex flex-wrap justify-center gap-8 sm:gap-12 text-center">
-        <div><div class="text-3xl font-bold text-emerald-400">9</div><div class="text-xs text-slate-500 mt-1">Providers Evaluated</div></div>
-        <div><div class="text-3xl font-bold text-emerald-400">6</div><div class="text-xs text-slate-500 mt-1">Dimensions</div></div>
-        <div><div class="text-3xl font-bold text-emerald-400">30</div><div class="text-xs text-slate-500 mt-1">Max Score</div></div>
-        <div><div class="text-3xl font-bold text-emerald-400">4</div><div class="text-xs text-slate-500 mt-1">Tiers</div></div>
-      </div>
+  <a href="#compare" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-3 focus:left-3 focus:rounded-lg focus:bg-emerald-400 focus:px-4 focus:py-2 focus:font-semibold focus:text-ink-900">Skip to content</a>
+
+  <div class="pointer-events-none fixed inset-0 -z-10 bg-aurora"></div>
+  <div class="pointer-events-none fixed inset-0 -z-10 bg-grid"></div>
+
+  <!-- ===== TOP NAV ===== -->
+  <header class="sticky top-0 z-40 border-b border-white/5 bg-ink-900/80 backdrop-blur-md">
+    <div class="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
+      <a href="#top" class="ring-focus flex items-center gap-2 rounded-md">
+        <span class="relative flex h-2.5 w-2.5">
+          <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60"></span>
+          <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400"></span>
+        </span>
+        <span class="text-sm font-semibold tracking-tight text-white">SustainableAI Score</span>
+      </a>
+      <nav class="hidden items-center gap-6 text-sm text-slate-400 md:flex">
+        <a href="#compare" class="ring-focus rounded transition-colors hover:text-emerald-300">Compare</a>
+        <a href="#report" class="ring-focus rounded transition-colors hover:text-emerald-300">Report</a>
+        <a href="#setup" class="ring-focus rounded transition-colors hover:text-emerald-300">Your setup</a>
+        <a href="#insights" class="ring-focus rounded transition-colors hover:text-emerald-300">Insights</a>
+      </nav>
+      <a id="nav-repo" href="#" target="_blank" rel="noopener noreferrer"
+         class="ring-focus inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:border-emerald-400/40 hover:text-emerald-300">
+        <svg viewBox="0 0 16 16" class="h-3.5 w-3.5 fill-current" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.07-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.15 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+        GitHub
+      </a>
     </div>
   </header>
 
-  <!-- ====== DROPDOWN ====== -->
-  <section class="max-w-3xl mx-auto px-4 -mt-4 mb-12 relative z-10">
-    <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 shadow-xl">
-      <label for="provider-select" class="block text-sm font-medium text-slate-400 mb-2">Select a provider to evaluate</label>
-      <div class="relative">
-        <select id="provider-select" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-slate-200 text-base appearance-none cursor-pointer focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:outline-none">
-          <option value="">— Choose a provider or tool —</option>
-        </select>
-        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-          <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-        </div>
-      </div>
-      <div id="phase2-card" class="mt-4 pt-4 border-t border-slate-700 hidden">
-        <p class="text-xs text-slate-500 mb-2">Don't see yours? Phase 2 coming soon — AI-powered evaluations on demand.</p>
-      </div>
-    </div>
-  </section>
+  <main id="top" class="mx-auto max-w-6xl px-4 pb-24">
 
-  <!-- ====== MAIN CONTENT ====== -->
-  <main class="max-w-6xl mx-auto px-4 pb-20 space-y-12">
+    <!-- ===== HERO ===== -->
+    <section class="pt-16 pb-12 text-center sm:pt-24">
+      <div class="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-3 py-1 text-xs font-medium text-emerald-300">
+        <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+        Open source · MIT licensed
+      </div>
+      <h1 class="mb-4 text-4xl font-extrabold tracking-tight text-white sm:text-6xl">
+        <span class="gradient-text">SustainableAI Score</span>
+      </h1>
+      <p id="hero-tagline" class="mx-auto mb-3 max-w-2xl text-lg text-slate-300 sm:text-xl">See how your AI stack really stacks up.</p>
+      <p id="hero-description" class="mx-auto mb-10 max-w-2xl text-sm leading-relaxed text-slate-500"></p>
 
-    <!-- Quick Decision Guide -->
-    <section id="decision-guide">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-xl font-bold text-white">Quick Decision Guide</h2>
-        <div class="flex gap-2" id="filter-pills">
-          <button data-filter="all" class="pill px-3 py-1.5 text-xs font-medium rounded-full bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors">All</button>
-          <button data-filter="Excellent" class="pill px-3 py-1.5 text-xs font-medium rounded-full bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors">Excellent</button>
-          <button data-filter="Mixed" class="pill px-3 py-1.5 text-xs font-medium rounded-full bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors">Mixed</button>
-          <button data-filter="Poor" class="pill px-3 py-1.5 text-xs font-medium rounded-full bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors">Poor</button>
-          <button data-filter="Avoid" class="pill px-3 py-1.5 text-xs font-medium rounded-full bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors">Avoid</button>
+      <div id="hero-stats" class="mx-auto mb-10 grid max-w-2xl grid-cols-2 gap-4 sm:grid-cols-4"></div>
+
+      <div class="mx-auto max-w-2xl">
+        <div class="mb-2 flex items-center justify-between text-[11px] uppercase tracking-wider text-slate-500">
+          <span>6 · Avoid</span><span>Scoring tiers</span><span>30 · Excellent</span>
         </div>
+        <div id="tier-scale" class="tier-scale"></div>
+        <div id="tier-legend" class="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-slate-400"></div>
       </div>
     </section>
 
-    <!-- Score Table -->
-    <section id="score-table-section">
-      <h2 class="text-xl font-bold text-white mb-4">Score Comparison</h2>
-      <div class="overflow-x-auto rounded-xl border border-slate-700">
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="bg-slate-800 text-slate-400 text-xs uppercase tracking-wider">
-              <th class="sortable text-left py-3 px-4 font-medium cursor-pointer hover:text-slate-200" data-col="name">Provider <span class="sort-icon">↕</span></th>
-              <th class="sortable text-center py-3 px-2 font-medium cursor-pointer hover:text-slate-200 w-12" data-col="hw">H/W <span class="sort-icon">↕</span></th>
-              <th class="sortable text-center py-3 px-2 font-medium cursor-pointer hover:text-slate-200 w-12" data-col="dc">DC <span class="sort-icon">↕</span></th>
-              <th class="sortable text-center py-3 px-2 font-medium cursor-pointer hover:text-slate-200 w-12" data-col="train">Train <span class="sort-icon">↕</span></th>
-              <th class="sortable text-center py-3 px-2 font-medium cursor-pointer hover:text-slate-200 w-12" data-col="infer">Infer <span class="sort-icon">↕</span></th>
-              <th class="sortable text-center py-3 px-2 font-medium cursor-pointer hover:text-slate-200 w-12" data-col="gov">Gov <span class="sort-icon">↕</span></th>
-              <th class="sortable text-center py-3 px-2 font-medium cursor-pointer hover:text-slate-200 w-12" data-col="tool">Tool <span class="sort-icon">↕</span></th>
-              <th class="sortable text-center py-3 px-3 font-medium cursor-pointer hover:text-slate-200" data-col="total">Total <span class="sort-icon">↕</span></th>
-              <th class="text-center py-3 px-3 font-medium">Verdict</th>
-            </tr>
-          </thead>
-          <tbody id="table-body" class="divide-y divide-slate-700"></tbody>
-        </table>
+    <!-- ===== SELECTOR ===== -->
+    <section class="relative z-10 mx-auto mb-14 max-w-3xl">
+      <div class="card rounded-2xl p-5 shadow-2xl sm:p-6">
+        <label for="provider-select" class="mb-2 block text-sm font-medium text-slate-300">Evaluate a provider or tool</label>
+        <div class="relative">
+          <select id="provider-select" disabled
+            class="ring-focus w-full cursor-pointer appearance-none rounded-xl border border-white/10 bg-ink-800 px-4 py-3 pr-10 text-base text-slate-100 transition-colors hover:border-emerald-400/40 focus:border-emerald-400 disabled:opacity-50">
+            <option value="">Loading providers…</option>
+          </select>
+          <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3.5">
+            <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </div>
+        </div>
+        <p id="selector-hint" class="mt-3 text-xs text-slate-500">Selecting a provider opens its full evaluation report, highlights its table row, and updates the charts.</p>
       </div>
-      <p class="text-xs text-slate-500 mt-2">H/W = Hardware &amp; Manufacturing · DC = Data Center Operations · Train = Training Footprint · Infer = Inference Efficiency · Gov = Company Governance · Tool = Tool/Agent Design</p>
     </section>
 
-    <!-- Bar Chart -->
-    <section id="chart-section">
-      <h2 class="text-xl font-bold text-white mb-4">Total Scores</h2>
-      <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 sm:p-6">
-        <div class="chart-container">
-          <canvas id="barChart"></canvas>
+    <!-- ===== COMPARE ===== -->
+    <section id="compare" class="mb-16 scroll-mt-20">
+      <div class="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 class="text-2xl font-bold tracking-tight text-white">Score comparison</h2>
+          <p class="mt-1 text-sm text-slate-500">Click any column to sort. Click a row to open the full report.</p>
+        </div>
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div class="relative">
+            <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/></svg>
+            <input id="table-search" type="search" placeholder="Filter by name" disabled
+              class="ring-focus w-full rounded-lg border border-white/10 bg-ink-850 py-2 pl-9 pr-3 text-sm text-slate-200 placeholder:text-slate-500 focus:border-emerald-400 disabled:opacity-50 sm:w-52">
+          </div>
+          <div id="filter-pills" class="flex flex-wrap gap-2"></div>
         </div>
       </div>
+
+      <div id="table-wrap" class="card overflow-hidden rounded-2xl">
+        <div class="hidden overflow-x-auto md:block">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-white/10 bg-white/[0.03] text-[11px] uppercase tracking-wider text-slate-400">
+                <th scope="col" class="sortable px-4 py-3 text-left font-medium" data-col="name">Provider <span class="sort-icon">↕</span></th>
+                <th scope="col" class="sortable px-2 py-3 text-center font-medium" data-col="hw">H/W <span class="sort-icon">↕</span></th>
+                <th scope="col" class="sortable px-2 py-3 text-center font-medium" data-col="dc">DC <span class="sort-icon">↕</span></th>
+                <th scope="col" class="sortable px-2 py-3 text-center font-medium" data-col="train">Train <span class="sort-icon">↕</span></th>
+                <th scope="col" class="sortable px-2 py-3 text-center font-medium" data-col="infer">Infer <span class="sort-icon">↕</span></th>
+                <th scope="col" class="sortable px-2 py-3 text-center font-medium" data-col="gov">Gov <span class="sort-icon">↕</span></th>
+                <th scope="col" class="sortable px-2 py-3 text-center font-medium" data-col="tool">Tool <span class="sort-icon">↕</span></th>
+                <th scope="col" class="sortable px-3 py-3 text-center font-medium" data-col="total">Total <span class="sort-icon sort-active">↓</span></th>
+                <th scope="col" class="px-3 py-3 text-center font-medium">Tier</th>
+              </tr>
+            </thead>
+            <tbody id="table-body" class="divide-y divide-white/5"></tbody>
+          </table>
+        </div>
+        <div id="mobile-cards" class="divide-y divide-white/5 md:hidden"></div>
+      </div>
+      <p id="dimension-key" class="mt-3 text-xs leading-relaxed text-slate-500"></p>
     </section>
 
-    <!-- Report Panel -->
-    <section id="report-section">
-      <div id="report-panel" class="report-panel fade-in">
-        <div class="bg-slate-800 border border-slate-700 rounded-xl p-6">
-          <div class="flex items-start justify-between mb-6">
-            <div>
-              <span class="text-xs text-slate-500 uppercase tracking-wider">Evaluation Report</span>
-              <h3 id="report-name" class="text-2xl font-bold text-white mt-1"></h3>
-              <div class="flex items-center gap-3 mt-1">
-                <span id="report-total" class="text-lg font-semibold"></span>
-                <span id="report-verdict" class="verdict-badge"></span>
+    <!-- ===== BAR CHART ===== -->
+    <section class="mb-16">
+      <h2 class="mb-1 text-2xl font-bold tracking-tight text-white">Total scores</h2>
+      <p class="mb-5 text-sm text-slate-500">Out of a possible 30. Higher is better.</p>
+      <div class="card rounded-2xl p-4 sm:p-6">
+        <div class="chart-box"><canvas id="barChart" aria-label="Bar chart of total sustainability scores by provider" role="img"></canvas></div>
+      </div>
+    </section>
+
+    <!-- ===== REPORT ===== -->
+    <section id="report" class="mb-16 scroll-mt-20">
+      <div id="report-panel" class="report-panel">
+        <div class="card rounded-2xl p-6 sm:p-8">
+          <div class="mb-6 flex items-start justify-between gap-4">
+            <div class="min-w-0">
+              <span class="text-[11px] uppercase tracking-wider text-slate-500">Evaluation report</span>
+              <h3 id="report-name" class="mt-1 truncate text-2xl font-bold text-white sm:text-3xl"></h3>
+              <div class="mt-2 flex flex-wrap items-center gap-3">
+                <span id="report-total" class="text-lg font-semibold text-white"></span>
+                <span id="report-tier" class="tier-badge"></span>
+                <span id="report-reviewed" class="text-xs text-slate-500"></span>
               </div>
             </div>
-            <button onclick="closeReport()" class="text-slate-500 hover:text-slate-300 transition-colors">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            <button onclick="closeReport()" aria-label="Close report"
+              class="ring-focus shrink-0 rounded-lg border border-white/10 p-1.5 text-slate-400 transition-colors hover:border-white/20 hover:text-slate-200">
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
           </div>
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div>
-              <div class="chart-container-radar">
-                <canvas id="radarChart"></canvas>
-              </div>
+
+          <p id="report-summary" class="mb-6 max-w-3xl text-sm leading-relaxed text-slate-300"></p>
+
+          <div class="grid grid-cols-1 gap-8 lg:grid-cols-2">
+            <div class="card-flat rounded-xl p-4">
+              <h4 class="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Dimension profile</h4>
+              <div class="chart-box-radar"><canvas id="radarChart" aria-label="Radar chart of the six dimension scores" role="img"></canvas></div>
             </div>
             <div>
-              <h4 class="text-sm font-semibold text-slate-300 mb-3">Dimension Breakdown</h4>
-              <div id="report-dimensions" class="space-y-2"></div>
-            </div>
-          </div>
-          <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <h4 class="text-sm font-semibold text-slate-300 mb-2">Trade-offs</h4>
-              <p id="report-tradeoffs" class="text-sm text-slate-400 leading-relaxed"></p>
-            </div>
-            <div>
-              <h4 class="text-sm font-semibold text-slate-300 mb-2">Key Gaps</h4>
-              <ul id="report-gaps" class="text-sm text-slate-400 space-y-1 list-disc list-inside"></ul>
+              <h4 class="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Dimension breakdown</h4>
+              <div id="report-dimensions" class="space-y-3"></div>
             </div>
           </div>
-          <div class="mt-6 pt-4 border-t border-slate-700">
-            <h4 class="text-sm font-semibold text-slate-300 mb-2">Sources</h4>
-            <ul id="report-sources" class="text-sm text-slate-400 space-y-1 list-disc list-inside"></ul>
+
+          <div class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2">
+            <div class="card-flat rounded-xl p-4">
+              <h4 class="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Trade-offs</h4>
+              <p id="report-tradeoffs" class="text-sm leading-relaxed text-slate-300"></p>
+            </div>
+            <div class="card-flat rounded-xl p-4">
+              <h4 class="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Key gaps</h4>
+              <ul id="report-gaps" class="space-y-1.5 text-sm leading-relaxed text-slate-300"></ul>
+            </div>
           </div>
+
+          <div class="card-flat mt-6 rounded-xl p-4">
+            <h4 class="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Sources</h4>
+            <ul id="report-sources" class="space-y-1.5 text-sm leading-relaxed text-slate-400"></ul>
+          </div>
+
+          <p id="report-changenotes" class="mt-4 text-xs text-slate-500"></p>
         </div>
+      </div>
+      <div id="report-empty" class="card rounded-2xl p-10 text-center text-sm text-slate-500">
+        Select a provider above to open its full evaluation report.
       </div>
     </section>
 
-    <!-- Your Setup -->
-    <section id="your-setup">
-      <h2 class="text-xl font-bold text-white mb-4">Your Setup</h2>
-      <div class="bg-slate-800 border border-slate-700 rounded-xl p-6">
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-          <div><span class="text-xs text-slate-500 block">Hardware</span><span class="text-sm font-medium">MacBook Air M4 (32GB)</span></div>
-          <div><span class="text-xs text-slate-500 block">Power Source</span><span class="text-sm font-medium text-emerald-400">Home solar (spring/summer)</span></div>
-          <div><span class="text-xs text-slate-500 block">Local Inference</span><span class="text-sm font-medium">Ollama + Gemma 4 8B (Q4_K_M) / llama.cpp</span></div>
-          <div><span class="text-xs text-slate-500 block">Cloud Use</span><span class="text-sm font-medium">DeepSeek V4 Flash via OpenRouter free tier</span></div>
-        </div>
-        <div class="bg-slate-900/50 rounded-lg p-3 text-xs text-slate-400 leading-relaxed">
-          <strong class="text-slate-300">Personal modifiers:</strong> +1 H/W for reusing existing device, +1 DC for solar-powered local inference. Your actual score with this setup: <strong class="text-emerald-400">28/30</strong>.
-        </div>
+    <!-- ===== YOUR SETUP ===== -->
+    <section id="setup" class="mb-16 scroll-mt-20">
+      <h2 class="mb-1 text-2xl font-bold tracking-tight text-white">Your setup</h2>
+      <p class="mb-5 text-sm text-slate-500">The framework scores providers. Personal modifiers adjust the score for your actual situation.</p>
+      <div class="card rounded-2xl p-6">
+        <div id="setup-grid" class="mb-5 grid grid-cols-1 gap-5 sm:grid-cols-2"></div>
+        <div id="setup-modifiers" class="rounded-xl border border-emerald-400/15 bg-emerald-400/[0.06] p-4 text-sm leading-relaxed text-slate-300"></div>
       </div>
     </section>
 
-    <!-- Key Insights -->
-    <section id="key-insights">
-      <h2 class="text-xl font-bold text-white mb-4">Key Insights</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
-          <div class="flex items-start gap-3">
-            <span class="text-emerald-400 text-lg mt-0.5">1</span>
-            <div><h3 class="text-sm font-semibold text-white mb-1">Two-tier reality</h3><p class="text-sm text-slate-400 leading-relaxed">Local + solar (28/30) far outranks any cloud provider (8–20/30). The single biggest sustainability lever is running inference locally.</p></div>
-          </div>
-        </div>
-        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
-          <div class="flex items-start gap-3">
-            <span class="text-amber-400 text-lg mt-0.5">2</span>
-            <div><h3 class="text-sm font-semibold text-white mb-1">Training transparency gap</h3><p class="text-sm text-slate-400 leading-relaxed">Even the best providers (Meta at 4/5) don't publish full lifecycle carbon assessments. Most score 1–2/5.</p></div>
-          </div>
-        </div>
-        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
-          <div class="flex items-start gap-3">
-            <span class="text-amber-400 text-lg mt-0.5">3</span>
-            <div><h3 class="text-sm font-semibold text-white mb-1">Efficiency ≠ sustainability</h3><p class="text-sm text-slate-400 leading-relaxed">DeepSeek is the most efficient cloud architecture but runs on ~60% coal grid. Architecture alone isn't enough — grid matters.</p></div>
-          </div>
-        </div>
-        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
-          <div class="flex items-start gap-3">
-            <span class="text-red-400 text-lg mt-0.5">4</span>
-            <div><h3 class="text-sm font-semibold text-white mb-1">xAI is an outlier</h3><p class="text-sm text-slate-400 leading-relaxed">At 8/30 with a 5-point gap to the next worst, xAI is in a category of its own. Active Memphis lawsuit, zero transparency.</p></div>
-          </div>
-        </div>
-      </div>
+    <!-- ===== INSIGHTS ===== -->
+    <section id="insights" class="scroll-mt-20">
+      <h2 class="mb-1 text-2xl font-bold tracking-tight text-white">Key insights</h2>
+      <p class="mb-5 text-sm text-slate-500">What the full evaluation set tells us.</p>
+      <div id="insights-grid" class="grid grid-cols-1 gap-4 md:grid-cols-2"></div>
     </section>
 
   </main>
 
-  <!-- ====== FOOTER ====== -->
-  <footer class="border-t border-slate-800 py-8 mt-12">
-    <div class="max-w-6xl mx-auto px-4 text-center text-sm text-slate-500">
-      <p class="mb-1"><strong class="text-slate-400">SustainableAI Score</strong> — built on the <a href="#" class="text-emerald-400 hover:text-emerald-300 underline">Sustainable AI Evaluation Framework</a></p>
-      <p>Last updated: May 26, 2026 · 9 providers evaluated · 6 dimensions · All data publicly sourced</p>
-      <p class="mt-2 text-xs text-slate-600">Built by <a href="#" class="text-slate-500 hover:text-slate-300">Jennifer</a> · Powered by Hermes Agent</p>
-      <p class="mt-1 text-xs text-slate-600">Source code: <a href="https://github.com/ticachica/sustainable-ai-score" class="text-emerald-400 hover:text-emerald-300 underline">github.com/ticachica/sustainable-ai-score</a></p>
+  <!-- ===== FOOTER ===== -->
+  <footer class="border-t border-white/5 py-10">
+    <div class="mx-auto max-w-6xl px-4">
+      <div class="flex flex-col items-center justify-between gap-4 text-center sm:flex-row sm:text-left">
+        <div>
+          <p class="text-sm text-slate-400"><strong class="text-slate-200">SustainableAI Score</strong> · built on the Sustainable AI Evaluation Framework</p>
+          <p id="footer-meta" class="mt-1 text-xs text-slate-500"></p>
+        </div>
+        <div class="flex items-center gap-4 text-xs">
+          <a id="footer-repo" href="#" target="_blank" rel="noopener noreferrer" class="ring-focus rounded text-emerald-400 transition-colors hover:text-emerald-300">Source code</a>
+          <a id="footer-license" href="#" target="_blank" rel="noopener noreferrer" class="ring-focus rounded text-slate-400 transition-colors hover:text-slate-200">MIT License</a>
+          <span id="footer-datasource" class="text-slate-600"></span>
+        </div>
+      </div>
     </div>
   </footer>
 
 <script>
-// ====== DATA ======
-const DIMENSION_LABELS = ['Hardware & Manufacturing', 'Data Center Operations', 'Training Footprint', 'Inference Efficiency', 'Company Governance', 'Tool/Agent Design'];
-const DIMENSION_SHORT = ['H/W', 'DC', 'Train', 'Infer', 'Gov', 'Tool'];
-const VERDICT_COLORS = { Excellent: { bg: '#065f46', text: '#6ee7b7', border: '#10b981', chart: '#10b981' }, Mixed: { bg: '#78350f', text: '#fbbf24', border: '#f59e0b', chart: '#f59e0b' }, Poor: { bg: '#7c2d12', text: '#fdba74', border: '#f97316', chart: '#f97316' }, Avoid: { bg: '#7f1d1d', text: '#fca5a5', border: '#ef4444', chart: '#ef4444' } };
+(function () {
+  'use strict';
 
-const providers = [
-  { id:'local-setup', name:'Hermes CLI + Gemma 4 (local, solar)', scores:[3,5,4,5,4,5], total:28, verdict:'Excellent',
-    tradeoffs:'Model quality caps at 7B–13B level vs frontier models. Not suitable for every task — use cloud for complex research.',
-    gaps:['Smaller model size means lower quality on complex reasoning vs cloud frontier models','No per-query energy tracking built in'],
-    sources:[
-      {label:'Home solar + M4 MacBook Air',url:'#'},
-      {label:'Ollama + llama.cpp — open-source local inference',url:'https://ollama.com'},
-      {label:'Gemma 4 8B Q4_K_M — ~5.4GB RAM, ~15-30W sustained',url:'#'}
-    ] },
-  { id:'meta-llama', name:'Meta (Llama)', scores:[2,3,4,4,3,4], total:20, verdict:'Mixed',
-    tradeoffs:'Best-in-class training transparency, but Meta\'s corporate record on privacy and labor is mixed. Custom license restricts some uses.',
-    gaps:['No per-query inference energy published','No full lifecycle carbon assessment for any Llama model','Water concerns in drought-prone data center regions (Los Lunas, NM)'],
-    sources:[
-      {label:'Meta Sustainability Reports',url:'https://sustainability.fb.com'},
-      {label:'Llama 3 Model Card',url:'https://ai.meta.com/blog/meta-llama-3/'},
-      {label:'Llama 3.1 Technical Report',url:'https://arxiv.org/abs/2407.21783'},
-      {label:'Open Compute Project',url:'https://www.opencompute.org/'}
-    ] },
-  { id:'google-deepmind', name:'Google DeepMind (Gemini)', scores:[3,3,2,4,3,2], total:17, verdict:'Mixed',
-    tradeoffs:'Custom TPU silicon reduces NVIDIA dependency. On-device Nano is great. But emissions up 48% since 2019, water up 20%.',
-    gaps:['Training energy not disclosed for Gemini','GHG emissions up 48% (2019-2023) — 14.3M tCO2e in 2023','Water consumption up 20% — 5.6B gallons in 2023','Carbon neutral claim relies on offsets, not actual reductions'],
-    sources:[
-      {label:'Google 2024 Environmental Report',url:'https://sustainability.google/reports/'},
-      {label:'DeepMind cooling optimization research',url:'https://deepmind.google'},
-      {label:'Chinchilla scaling laws (arXiv)',url:'https://arxiv.org/abs/2203.15556'}
-    ] },
-  { id:'anthropic-claude', name:'Anthropic (Claude)', scores:[2,3,2,3,3,3], total:16, verdict:'Mixed',
-    tradeoffs:'Model size choice (Haiku/Sonnet/Opus) lets you reduce impact. Benefit corp structure. But cloud-only, training opaque, no sustainability report.',
-    gaps:['No training energy or per-query energy published','No public dataset card for Claude models','No dedicated sustainability report from Anthropic','Cloud-only — no local inference option'],
-    sources:[
-      {label:'Anthropic sustainability page',url:'https://anthropic.com/sustainability'},
-      {label:'Google Environmental Report 2024',url:'https://sustainability.google/reports/'},
-      {label:'TechCrunch — Anthropic infrastructure coverage'}
-    ] },
-  { id:'deepseek-v4', name:'DeepSeek V4 Flash', scores:[2,1,3,4,2,3], total:15, verdict:'Poor',
-    tradeoffs:'Most efficient architecture (MoE, MLA) but coal-heavy Chinese grid (~60%) negates the efficiency gains. Efficiency claims unverified.',
-    gaps:['~60% coal grid in Chinese data centers','No PUE, carbon, or grid mix disclosure','Efficiency claims not independently verified','Must comply with Chinese state data access requests'],
-    sources:[
-      {label:'DeepSeek technical papers (arXiv)',url:'https://arxiv.org/search/?query=deepseek&searchtype=all'},
-      {label:'Semianalysis — DeepSeek cost analysis',url:'https://semianalysis.com'},
-      {label:'CSIS export control reports',url:'https://www.csis.org'}
-    ] },
-  { id:'mistral-ai', name:'Mistral AI', scores:[2,2,1,4,3,3], total:15, verdict:'Poor',
-    tradeoffs:'Excellent MoE efficiency (Mixtral ~13B active params), open-weight Apache 2.0. But zero sustainability disclosure, no training energy data.',
-    gaps:['No training energy or per-query energy published','No sustainability report of any kind','Cloud hosting on Azure/GCP/AWS — inherits their footprints','Custom license for Mistral Large'],
-    sources:[
-      {label:'Mistral blog',url:'https://mistral.ai/news/'},
-      {label:'Microsoft partnership announcements',url:'https://news.microsoft.com'},
-      {label:'External efficiency estimates'}
-    ] },
-  { id:'claude-desktop', name:'Claude Desktop', scores:[2,3,2,3,3,2], total:15, verdict:'Poor',
-    tradeoffs:'Same infrastructure as Claude API but worse tool design — no per-task model routing, always uses Opus-class models.',
-    gaps:['No per-task model choice (always uses largest model)','Cloud-only thin client with no efficiency controls','Same training opacity as Anthropic','No local fallback option'],
-    sources:[
-      {label:'Anthropic documentation',url:'https://docs.anthropic.com'},
-      {label:'Same infrastructure as Anthropic Claude API'}
-    ] },
-  { id:'openai-codex', name:'OpenAI Codex CLI', scores:[2,2,1,3,2,3], total:13, verdict:'Poor',
-    tradeoffs:'Best tool design among cloud agents (open-source, Rust, configurable model). But heaviest training footprint, water-heavy Azure DCs, active copyright litigation.',
-    gaps:['OpenAI: no training energy published (GPT-4 est. $100M+ compute)','Azure Iowa DC consumed ~6% of local water district supply','Active lawsuits: NYT, Authors Guild','Data labeling: reported Kenyan workers at ~$2/hr'],
-    sources:[
-      {label:'Microsoft 2024 Environmental Report',url:'https://blogs.microsoft.com/on-the-issues/'},
-      {label:'Des Moines Register — Iowa water usage coverage'},
-      {label:'Time magazine (2023) — labeling labor investigation'},
-      {label:'Codex CLI GitHub repository',url:'https://github.com/openai/codex'}
-    ] },
-  { id:'xai-grok', name:'xAI (Grok)', scores:[2,1,1,2,1,1], total:8, verdict:'Avoid',
-    tradeoffs:'Diesel generators without emissions controls in South Memphis (environmental justice community). Active SELC lawsuit. Zero transparency across all dimensions.',
-    gaps:['Active SELC lawsuit — Memphis Community Against Pollution','Diesel backup generators without emissions controls','Zero sustainability reporting','No model choice — single massive model only','Environmental justice concerns — South Memphis is predominantly Black and low-income'],
-    sources:[
-      {label:'Southern Environmental Law Center press releases',url:'https://www.selcva.org'},
-      {label:'Memphis Commercial Appeal reporting',url:'https://www.commercialappeal.com'},
-      {label:'WREG Memphis local news coverage',url:'https://www.wreg.com'}
-    ] }
-];
+  var DATA = null;
+  var DATA_SOURCE = '';
 
-// ====== STATE ======
-let sortCol = 'total';
-let sortDir = -1;
-let activeFilter = 'all';
-let selectedId = null;
-let barChartInstance = null;
-let radarChartInstance = null;
+  var state = {
+    sortCol: 'total',
+    sortDir: -1,
+    filter: 'all',
+    query: '',
+    selectedId: null
+  };
 
-// ====== RENDER TABLE ======
-function renderTable() {
-  const tbody = document.getElementById('table-body');
-  let filtered = activeFilter === 'all' ? providers : providers.filter(p => p.verdict === activeFilter);
-  const sorted = [...filtered].sort((a,b) => {
-    let va, vb;
-    if (sortCol === 'name') { va = a.name.toLowerCase(); vb = b.name.toLowerCase(); return va < vb ? -sortDir : va > vb ? sortDir : 0; }
-    else if (sortCol === 'verdict') { const order = ['Excellent','Mixed','Poor','Avoid']; va = order.indexOf(a.verdict); vb = order.indexOf(b.verdict); }
-    else if (sortCol === 'total') { va = a.total; vb = b.total; }
-    else { const idx = DIMENSION_SHORT.map(d=>d.toLowerCase()).indexOf(sortCol); va = a.scores[idx]; vb = b.scores[idx]; }
-    return (va - vb) * sortDir;
-  });
-  tbody.innerHTML = sorted.map(p => {
-    const c = VERDICT_COLORS[p.verdict];
-    const sel = selectedId === p.id ? 'selected-row' : '';
-    const dims = p.scores.map((s,i) => `<td class="text-center py-3 px-2 text-slate-300 text-xs">${s}</td>`).join('');
-    return `<tr class="cursor-pointer hover:bg-slate-700/50 transition-colors ${sel}" data-id="${p.id}">
-      <td class="py-3 px-4 text-sm font-medium text-white">${p.name}</td>
-      ${dims}
-      <td class="text-center py-3 px-3 font-bold text-white">${p.total}</td>
-      <td class="text-center py-3 px-3"><span class="verdict-badge" style="background:${c.bg};color:${c.text}">${p.verdict}</span></td>
-    </tr>`;
-  }).join('');
-  // click handlers
-  tbody.querySelectorAll('tr').forEach(tr => {
-    tr.addEventListener('click', () => { selectProvider(tr.dataset.id); });
-  });
-  updateSortIcons();
-}
+  var barChart = null;
+  var radarChart = null;
 
-function updateSortIcons() {
-  document.querySelectorAll('.sortable .sort-icon').forEach(el => el.classList.remove('sort-active'));
-  const th = document.querySelector(`.sortable[data-col="${sortCol}"] .sort-icon`);
-  if (th) { th.classList.add('sort-active'); th.textContent = sortDir === -1 ? '↓' : '↑'; }
-}
+  // ---------- helpers ----------
+  function el(id) { return document.getElementById(id); }
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  function dims() { return DATA.dimensions; }
+  function totalOf(p) {
+    return dims().reduce(function (sum, d) { return sum + (Number(p.scores[d.key]) || 0); }, 0);
+  }
+  function tierOf(total) {
+    var tiers = DATA.tiers;
+    for (var i = 0; i < tiers.length; i++) {
+      if (total >= tiers[i].min && total <= tiers[i].max) return tiers[i];
+    }
+    return tiers[tiers.length - 1];
+  }
+  function scoreColor(v) {
+    if (v >= 4) return '#10b981';
+    if (v === 3) return '#f59e0b';
+    if (v === 2) return '#f97316';
+    return '#ef4444';
+  }
+  function hexA(hex, alpha) {
+    var h = hex.replace('#', '');
+    if (h.length === 3) h = h.split('').map(function (c) { return c + c; }).join('');
+    var n = parseInt(h, 16);
+    return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + alpha + ')';
+  }
 
-// ====== FILTER PILLS ======
-document.querySelectorAll('#filter-pills .pill').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('#filter-pills .pill').forEach(b => { b.classList.remove('ring-2', 'ring-emerald-500', 'bg-slate-600'); b.classList.add('bg-slate-700'); });
-    btn.classList.remove('bg-slate-700'); btn.classList.add('ring-2', 'ring-emerald-500', 'bg-slate-600');
-    activeFilter = btn.dataset.filter;
+  // ---------- data loading (dynamic) ----------
+  function loadData() {
+    var candidates = ['/api/providers', './data/providers.json'];
+    var i = 0;
+    function tryNext() {
+      if (i >= candidates.length) return Promise.reject(new Error('All data sources failed'));
+      var url = candidates[i++];
+      return fetch(url, { cache: 'no-store' })
+        .then(function (res) {
+          if (!res.ok) throw new Error(url + ' returned ' + res.status);
+          return res.json();
+        })
+        .then(function (json) {
+          if (!json || !Array.isArray(json.providers) || !Array.isArray(json.dimensions)) {
+            throw new Error(url + ' returned an unexpected shape');
+          }
+          DATA_SOURCE = url;
+          return json;
+        })
+        .catch(function (err) {
+          console.warn('[SustainableAI Score] data source failed:', url, err.message);
+          return tryNext();
+        });
+    }
+    return tryNext();
+  }
+
+  // ---------- static chrome ----------
+  function renderChrome() {
+    el('hero-tagline').textContent = DATA.meta.tagline;
+    el('hero-description').textContent = DATA.meta.description;
+    el('nav-repo').href = DATA.meta.repo;
+    el('footer-repo').href = DATA.meta.repo;
+    el('footer-license').href = DATA.meta.repo + '/blob/main/LICENSE';
+    el('footer-datasource').textContent = 'data via ' + DATA_SOURCE;
+    el('footer-datasource').title = 'The provider dataset is loaded at runtime from ' + DATA_SOURCE;
+
+    el('footer-meta').textContent = 'Last updated ' + DATA.meta.lastUpdated + ' · ' + DATA.providers.length +
+      ' providers · ' + DATA.dimensions.length + ' dimensions · All data publicly sourced';
+
+    el('dimension-key').innerHTML = DATA.dimensions.map(function (d) {
+      return '<span class="text-slate-400">' + esc(d.short) + '</span> = ' + esc(d.label);
+    }).join(' · ');
+
+    var stats = [
+      { v: DATA.providers.length, l: 'Providers evaluated' },
+      { v: DATA.dimensions.length, l: 'Dimensions' },
+      { v: 30, l: 'Max score' },
+      { v: DATA.tiers.length, l: 'Tiers' }
+    ];
+    el('hero-stats').innerHTML = stats.map(function (s) {
+      return '<div class="card rounded-xl px-3 py-4"><div class="text-3xl font-bold text-emerald-400">' + s.v +
+        '</div><div class="mt-1 text-xs text-slate-500">' + esc(s.l) + '</div></div>';
+    }).join('');
+
+    el('tier-scale').innerHTML = DATA.tiers.map(function (t) {
+      return '<div style="background:' + t.color + '"></div>';
+    }).join('');
+    el('tier-legend').innerHTML = DATA.tiers.map(function (t) {
+      return '<span class="inline-flex items-center gap-1.5"><span class="h-2 w-2 rounded-full" style="background:' +
+        t.color + '"></span>' + esc(t.name) + ' <span class="text-slate-600">' + t.min + ' to ' + t.max + '</span></span>';
+    }).join('');
+
+    el('filter-pills').innerHTML = ['all'].concat(DATA.tiers.map(function (t) { return t.name; }))
+      .map(function (f) {
+        return '<button type="button" class="pill ring-focus rounded-full px-3 py-1.5 text-xs" data-filter="' +
+          esc(f) + '">' + (f === 'all' ? 'All' : esc(f)) + '</button>';
+      }).join('');
+  }
+
+  // ---------- table + mobile cards ----------
+  function visibleProviders() {
+    var list = DATA.providers.slice();
+    if (state.filter !== 'all') {
+      list = list.filter(function (p) { return tierOf(totalOf(p)).name === state.filter; });
+    }
+    if (state.query) {
+      var q = state.query.toLowerCase();
+      list = list.filter(function (p) { return p.name.toLowerCase().indexOf(q) !== -1; });
+    }
+    var dir = state.sortDir;
+    list.sort(function (a, b) {
+      var va, vb;
+      if (state.sortCol === 'name') {
+        va = a.name.toLowerCase(); vb = b.name.toLowerCase();
+        return va < vb ? -dir : va > vb ? dir : 0;
+      }
+      if (state.sortCol === 'total') { va = totalOf(a); vb = totalOf(b); }
+      else { va = Number(a.scores[state.sortCol]) || 0; vb = Number(b.scores[state.sortCol]) || 0; }
+      if (va === vb) return a.name.localeCompare(b.name);
+      return (va - vb) * dir;
+    });
+    return list;
+  }
+
+  function renderSortIcons() {
+    var ths = document.querySelectorAll('.sortable');
+    for (var i = 0; i < ths.length; i++) {
+      var icon = ths[i].querySelector('.sort-icon');
+      var active = ths[i].dataset.col === state.sortCol;
+      icon.className = 'sort-icon' + (active ? ' sort-active' : '');
+      if (active) icon.textContent = state.sortDir === -1 ? '↓' : '↑';
+      ths[i].setAttribute('aria-sort', active ? (state.sortDir === -1 ? 'descending' : 'ascending') : 'none');
+    }
+  }
+
+  function renderTable() {
+    var list = visibleProviders();
+    var tbody = el('table-body');
+    var cards = el('mobile-cards');
+
+    if (!list.length) {
+      tbody.innerHTML = '<tr><td colspan="9" class="px-4 py-10 text-center text-sm text-slate-500">No providers match that filter.</td></tr>';
+      cards.innerHTML = '<div class="px-4 py-10 text-center text-sm text-slate-500">No providers match that filter.</div>';
+      renderSortIcons();
+      return;
+    }
+
+    tbody.innerHTML = list.map(function (p) {
+      var total = totalOf(p);
+      var tier = tierOf(total);
+      var cells = dims().map(function (d) {
+        return '<td class="px-2 py-3 text-center text-xs tabular-nums text-slate-300">' + (Number(p.scores[d.key]) || 0) + '</td>';
+      }).join('');
+      return '<tr data-id="' + esc(p.id) + '" tabindex="0" role="button" aria-label="Open report for ' + esc(p.name) + '" ' +
+        'class="cursor-pointer transition-colors hover:bg-white/[0.04]' + (state.selectedId === p.id ? ' row-selected' : '') + '">' +
+        '<td class="px-4 py-3 text-sm font-medium text-white">' + esc(p.name) + '</td>' +
+        cells +
+        '<td class="px-3 py-3 text-center font-bold tabular-nums text-white">' + total + '</td>' +
+        '<td class="px-3 py-3 text-center"><span class="tier-badge" style="background:' + hexA(tier.color, 0.14) +
+        ';color:' + tier.color + ';border-color:' + hexA(tier.color, 0.3) + '">' + esc(tier.name) + '</span></td>' +
+        '</tr>';
+    }).join('');
+
+    cards.innerHTML = list.map(function (p) {
+      var total = totalOf(p);
+      var tier = tierOf(total);
+      var bars = dims().map(function (d) {
+        var v = Number(p.scores[d.key]) || 0;
+        return '<div class="flex items-center gap-2">' +
+          '<span class="w-10 shrink-0 text-[10px] uppercase tracking-wider text-slate-500">' + esc(d.short) + '</span>' +
+          '<span class="bar-track flex-1"><span class="bar-fill block" style="width:' + (v / 5 * 100) + '%;background:' + scoreColor(v) + '"></span></span>' +
+          '<span class="w-6 shrink-0 text-right text-[11px] tabular-nums text-slate-400">' + v + '</span>' +
+          '</div>';
+      }).join('');
+      return '<div data-id="' + esc(p.id) + '" tabindex="0" role="button" aria-label="Open report for ' + esc(p.name) + '" ' +
+        'class="cursor-pointer p-4 transition-colors hover:bg-white/[0.04]' + (state.selectedId === p.id ? ' row-selected' : '') + '">' +
+        '<div class="mb-3 flex items-center justify-between gap-3">' +
+        '<span class="text-sm font-medium text-white">' + esc(p.name) + '</span>' +
+        '<span class="flex items-center gap-2"><span class="text-base font-bold tabular-nums text-white">' + total + '</span>' +
+        '<span class="tier-badge" style="background:' + hexA(tier.color, 0.14) + ';color:' + tier.color +
+        ';border-color:' + hexA(tier.color, 0.3) + '">' + esc(tier.name) + '</span></span>' +
+        '</div><div class="space-y-1.5">' + bars + '</div></div>';
+    }).join('');
+
+    var nodes = document.querySelectorAll('#table-body tr[data-id], #mobile-cards [data-id]');
+    for (var i = 0; i < nodes.length; i++) {
+      (function (node) {
+        node.addEventListener('click', function () { selectProvider(node.dataset.id); });
+        node.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectProvider(node.dataset.id); }
+        });
+      })(nodes[i]);
+    }
+    renderSortIcons();
+  }
+
+  // ---------- charts ----------
+  function renderBarChart() {
+    var list = visibleProviders().slice().sort(function (a, b) { return totalOf(b) - totalOf(a); });
+    var ctx = el('barChart').getContext('2d');
+    var labels = list.map(function (p) { return p.name; });
+    var data = list.map(totalOf);
+    var colors = list.map(function (p) {
+      return state.selectedId === p.id ? '#6ee7b7' : tierOf(totalOf(p)).color;
+    });
+    var fills = list.map(function (p) {
+      return state.selectedId === p.id ? 'rgba(110,231,183,0.35)' : hexA(tierOf(totalOf(p)).color, 0.18);
+    });
+
+    if (barChart) barChart.destroy();
+    barChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Total score',
+          data: data,
+          backgroundColor: fills,
+          borderColor: colors,
+          borderWidth: 1.5,
+          borderRadius: 5,
+          barThickness: 22
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 600 },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#0e1729', titleColor: '#e2e8f0', bodyColor: '#94a3b8',
+            borderColor: 'rgba(148,163,184,0.2)', borderWidth: 1, cornerRadius: 8, padding: 10,
+            callbacks: { label: function (c) { return c.raw + ' / 30 · ' + tierOf(c.raw).name; } }
+          }
+        },
+        scales: {
+          x: { min: 0, max: 30, ticks: { stepSize: 5, color: '#64748b', font: { size: 11 } }, grid: { color: 'rgba(148,163,184,0.08)' } },
+          y: { ticks: { color: '#94a3b8', font: { size: 11 } }, grid: { display: false } }
+        }
+      }
+    });
+  }
+
+  function renderRadarChart(p) {
+    var ctx = el('radarChart').getContext('2d');
+    var tier = tierOf(totalOf(p));
+    if (radarChart) radarChart.destroy();
+    radarChart = new Chart(ctx, {
+      type: 'radar',
+      data: {
+        labels: dims().map(function (d) { return d.short; }),
+        datasets: [{
+          label: p.name,
+          data: dims().map(function (d) { return Number(p.scores[d.key]) || 0; }),
+          backgroundColor: hexA(tier.color, 0.16),
+          borderColor: tier.color,
+          borderWidth: 2,
+          pointBackgroundColor: tier.color,
+          pointBorderColor: '#070d19',
+          pointRadius: 4,
+          pointHoverRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 500 },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#0e1729', titleColor: '#e2e8f0', bodyColor: '#94a3b8',
+            borderColor: 'rgba(148,163,184,0.2)', borderWidth: 1, cornerRadius: 8, padding: 10,
+            callbacks: { label: function (c) { return dims()[c.dataIndex].label + ': ' + c.raw + ' / 5'; } }
+          }
+        },
+        scales: {
+          r: {
+            min: 0, max: 5,
+            ticks: { stepSize: 1, color: '#64748b', backdropColor: 'transparent', font: { size: 10 } },
+            grid: { color: 'rgba(148,163,184,0.12)' },
+            angleLines: { color: 'rgba(148,163,184,0.12)' },
+            pointLabels: { color: '#94a3b8', font: { size: 11, weight: '600' } }
+          }
+        }
+      }
+    });
+  }
+
+  // ---------- report ----------
+  function selectProvider(id) {
+    var match = DATA.providers.filter(function (x) { return x.id === id; })[0];
+    if (!match) return;
+    state.selectedId = id;
+    el('provider-select').value = id;
+    showReport(match);
     renderTable();
     renderBarChart();
-  });
-});
-document.querySelector('#filter-pills .pill[data-filter="all"]').click();
+    el('report').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 
-// ====== SORTABLE HEADERS ======
-document.querySelectorAll('.sortable').forEach(th => {
-  th.addEventListener('click', () => {
-    const col = th.dataset.col;
-    if (sortCol === col) sortDir *= -1;
-    else { sortCol = col; sortDir = -1; }
-    renderTable();
-  });
-});
+  function showReport(p) {
+    var total = totalOf(p);
+    var tier = tierOf(total);
 
-// ====== SELECT / REPORT ======
-function selectProvider(id) {
-  selectedId = id;
-  const p = providers.find(x => x.id === id);
-  if (!p) return;
-  renderTable();
-  renderBarChart();
-  showReport(p);
-  document.getElementById('provider-select').value = id;
-  document.getElementById('report-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
+    el('report-name').textContent = p.name;
+    el('report-total').textContent = total + ' / 30';
+    var badge = el('report-tier');
+    badge.textContent = tier.name;
+    badge.style.background = hexA(tier.color, 0.14);
+    badge.style.color = tier.color;
+    badge.style.borderColor = hexA(tier.color, 0.3);
+    el('report-reviewed').textContent = p.lastReviewed ? 'Reviewed ' + p.lastReviewed : '';
+    el('report-summary').textContent = p.summary || '';
 
-function showReport(p) {
-  const panel = document.getElementById('report-panel');
-  document.getElementById('report-name').textContent = p.name;
-  document.getElementById('report-total').textContent = `${p.total}/30`;
-  const vc = VERDICT_COLORS[p.verdict];
-  const badge = document.getElementById('report-verdict');
-  badge.textContent = p.verdict;
-  badge.style.background = vc.bg;
-  badge.style.color = vc.text;
+    el('report-tradeoffs').textContent = p.tradeoffs || '';
+    el('report-gaps').innerHTML = (p.gaps || []).map(function (g) {
+      return '<li class="flex gap-2"><span class="mt-2 h-1 w-1 shrink-0 rounded-full bg-slate-500"></span><span>' + esc(g) + '</span></li>';
+    }).join('') || '<li class="text-slate-500">No gaps recorded.</li>';
 
-  document.getElementById('report-tradeoffs').textContent = p.tradeoffs;
-  document.getElementById('report-gaps').innerHTML = p.gaps.map(g => `<li>${g}</li>`).join('');
-  document.getElementById('report-sources').innerHTML = p.sources.map(s => {
-    if (s.url && s.url !== '#') {
-      return `<li><a href="${s.url}" target="_blank" rel="noopener noreferrer" class="text-emerald-400 hover:text-emerald-300 underline">${s.label}</a></li>`;
-    }
-    return `<li class="text-slate-400">${s.label}</li>`;
-  }).join('');
-
-  // dimension breakdown
-  const dimsEl = document.getElementById('report-dimensions');
-  dimsEl.innerHTML = p.scores.map((s,i) => {
-    const barWidth = (s/5)*100;
-    const barColor = s >= 4 ? '#10b981' : s >= 3 ? '#f59e0b' : s >= 2 ? '#f97316' : '#ef4444';
-    return `<div>
-      <div class="flex justify-between text-xs mb-1"><span class="text-slate-400">${DIMENSION_LABELS[i]}</span><span class="font-medium text-slate-200">${s}/5</span></div>
-      <div class="bg-slate-700 rounded-full h-2 overflow-hidden"><div class="h-full rounded-full transition-all duration-500" style="width:${barWidth}%;background:${barColor}"></div></div>
-    </div>`;
-  }).join('');
-
-  panel.classList.add('open');
-  renderRadarChart(p);
-}
-
-function closeReport() {
-  document.getElementById('report-panel').classList.remove('open');
-  selectedId = null;
-  document.getElementById('provider-select').value = '';
-  renderTable();
-  renderBarChart();
-}
-
-// ====== DROPDOWN ======
-const select = document.getElementById('provider-select');
-providers.forEach(p => {
-  const opt = document.createElement('option');
-  opt.value = p.id;
-  opt.textContent = `${p.name}  —  ${p.total}/30 (${p.verdict})`;
-  select.appendChild(opt);
-});
-select.addEventListener('change', () => {
-  if (select.value) selectProvider(select.value);
-  else closeReport();
-});
-
-// ====== BAR CHART ======
-function renderBarChart() {
-  const ctx = document.getElementById('barChart').getContext('2d');
-  let filtered = activeFilter === 'all' ? providers : providers.filter(p => p.verdict === activeFilter);
-  const labels = filtered.map(p => p.name.replace(/\(.*?\)/g, m => m.length > 20 ? m.substring(0,18)+'…' : m));
-  const data = filtered.map(p => p.total);
-  const colors = filtered.map(p => {
-    const c = VERDICT_COLORS[p.verdict]; return selectedId === p.id ? '#34d399' : c.chart;
-  });
-  const bgColors = filtered.map(p => {
-    const c = VERDICT_COLORS[p.verdict]; return selectedId === p.id ? 'rgba(52,211,153,0.3)' : c.chart + '33';
-  });
-
-  if (barChartInstance) barChartInstance.destroy();
-  barChartInstance = new Chart(ctx, {
-    type: 'bar',
-    data: { labels, datasets: [{ label: 'Total Score', data, backgroundColor: bgColors, borderColor: colors, borderWidth: 2, borderRadius: 4, barThickness: 28 }] },
-    options: {
-      indexAxis: 'y',
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false }, tooltip: { backgroundColor: '#1e293b', titleColor: '#e2e8f0', bodyColor: '#94a3b8', borderColor: '#334155', borderWidth: 1, cornerRadius: 8, callbacks: { label: ctx => `${ctx.raw}/30` } } },
-      scales: { x: { min: 0, max: 30, ticks: { stepSize: 5, color: '#64748b', font: { size: 11 } }, grid: { color: '#334155' } }, y: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { display: false } } }
-    }
-  });
-}
-
-// ====== RADAR CHART ======
-function renderRadarChart(p) {
-  const ctx = document.getElementById('radarChart').getContext('2d');
-  if (radarChartInstance) radarChartInstance.destroy();
-  const vc = VERDICT_COLORS[p.verdict];
-  radarChartInstance = new Chart(ctx, {
-    type: 'radar',
-    data: {
-      labels: DIMENSION_SHORT,
-      datasets: [{
-        label: p.name.substring(0,20)+'…',
-        data: p.scores,
-        backgroundColor: vc.chart + '22',
-        borderColor: vc.chart,
-        borderWidth: 2,
-        pointBackgroundColor: vc.chart,
-        pointRadius: 4
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false }, tooltip: { backgroundColor: '#1e293b', titleColor: '#e2e8f0', bodyColor: '#94a3b8', borderColor: '#334155', borderWidth: 1, cornerRadius: 8, callbacks: { label: ctx => `${DIMENSION_LABELS[ctx.dataIndex]}: ${ctx.raw}/5` } } },
-      scales: {
-        r: { min: 0, max: 5, ticks: { stepSize: 1, color: '#64748b', backdropColor: 'transparent', font: { size: 10 } }, grid: { color: '#334155' }, angleLines: { color: '#334155' }, pointLabels: { color: '#94a3b8', font: { size: 11, weight: '500' } } }
+    el('report-sources').innerHTML = (p.sources || []).map(function (s) {
+      if (s && s.url) {
+        return '<li class="flex gap-2"><span class="mt-2 h-1 w-1 shrink-0 rounded-full bg-emerald-400/60"></span>' +
+          '<a href="' + esc(s.url) + '" target="_blank" rel="noopener noreferrer" class="text-emerald-400 transition-colors hover:text-emerald-300">' + esc(s.label) + '</a></li>';
       }
-    }
-  });
-}
+      return '<li class="flex gap-2"><span class="mt-2 h-1 w-1 shrink-0 rounded-full bg-slate-600"></span><span>' + esc(s && s.label ? s.label : '') + '</span></li>';
+    }).join('') || '<li class="text-slate-500">No sources recorded.</li>';
 
-// ====== INIT ======
-window.addEventListener('load', () => {
-  renderTable();
-  renderBarChart();
-});
+    var notes = el('report-changenotes');
+    if (p.changeNotes && p.changeNotes.indexOf('Pending') !== 0) {
+      notes.textContent = 'What changed: ' + p.changeNotes;
+      notes.style.display = '';
+    } else {
+      notes.textContent = '';
+      notes.style.display = 'none';
+    }
+
+    el('report-dimensions').innerHTML = dims().map(function (d) {
+      var v = Number(p.scores[d.key]) || 0;
+      return '<div>' +
+        '<div class="mb-1 flex items-baseline justify-between gap-3">' +
+        '<span class="text-xs text-slate-400">' + esc(d.label) + '</span>' +
+        '<span class="text-xs font-semibold tabular-nums text-slate-200">' + v + ' / 5</span></div>' +
+        '<span class="bar-track block"><span class="bar-fill block" style="width:' + (v / 5 * 100) + '%;background:' + scoreColor(v) + '"></span></span>' +
+        '</div>';
+    }).join('');
+
+    el('report-empty').style.display = 'none';
+    el('report-panel').classList.add('open');
+    renderRadarChart(p);
+  }
+
+  function closeReport() {
+    el('report-panel').classList.remove('open');
+    el('report-empty').style.display = '';
+    state.selectedId = null;
+    el('provider-select').value = '';
+    renderTable();
+    renderBarChart();
+  }
+  window.closeReport = closeReport;
+
+  // ---------- setup + insights ----------
+  function renderSetup() {
+    var s = DATA.personalSetup || {};
+    var fields = [
+      ['Hardware', s.hardware], ['Power source', s.power],
+      ['Local inference', s.localInference], ['Cloud use', s.cloudUse]
+    ];
+    el('setup-grid').innerHTML = fields.map(function (f) {
+      return '<div><span class="block text-[11px] uppercase tracking-wider text-slate-500">' + esc(f[0]) +
+        '</span><span class="mt-1 block text-sm font-medium text-slate-100">' + esc(f[1] || '') + '</span></div>';
+    }).join('');
+
+    var local = DATA.providers.filter(function (p) { return p.id === 'local-setup'; })[0];
+    var mods = (s.modifiers || []).map(function (m) {
+      var d = dims().filter(function (x) { return x.key === m.dimension; })[0];
+      return '<li class="flex gap-2"><span class="mt-2 h-1 w-1 shrink-0 rounded-full bg-emerald-400"></span>' +
+        '<span><strong class="text-emerald-300">+' + m.delta + ' ' + esc(d ? d.short : m.dimension) + '</strong> · ' + esc(m.reason) + '</span></li>';
+    }).join('');
+
+    var baseTotal = local && local.baseScores
+      ? dims().reduce(function (a, d) { return a + (Number(local.baseScores[d.key]) || 0); }, 0)
+      : null;
+
+    el('setup-modifiers').innerHTML =
+      '<p class="mb-2 text-xs font-semibold uppercase tracking-wider text-emerald-300">Personal modifiers applied</p>' +
+      '<ul class="space-y-1.5">' + mods + '</ul>' +
+      (local ? '<p class="mt-3 border-t border-emerald-400/15 pt-3 text-sm text-slate-300">Your resulting score: <strong class="text-emerald-300">' +
+        totalOf(local) + ' / 30</strong> (' + esc(tierOf(totalOf(local)).name) + ')' +
+        (baseTotal !== null ? ' · base ' + baseTotal + ' before modifiers' : '') +
+        '</p>' : '');
+  }
+
+  function renderInsights() {
+    var toneMap = {
+      good: { bar: '#10b981', chip: 'rgba(16,185,129,0.14)', text: '#6ee7b7' },
+      warn: { bar: '#f59e0b', chip: 'rgba(245,158,11,0.14)', text: '#fbbf24' },
+      bad: { bar: '#ef4444', chip: 'rgba(239,68,68,0.14)', text: '#fca5a5' }
+    };
+    el('insights-grid').innerHTML = (DATA.insights || []).map(function (ins, i) {
+      var t = toneMap[ins.tone] || toneMap.warn;
+      return '<div class="card relative overflow-hidden rounded-2xl p-5">' +
+        '<span class="absolute left-0 top-0 h-full w-1" style="background:' + t.bar + '"></span>' +
+        '<div class="mb-2 flex items-center gap-3">' +
+        '<span class="flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold" style="background:' + t.chip + ';color:' + t.text + '">' + (i + 1) + '</span>' +
+        '<h3 class="text-sm font-semibold text-white">' + esc(ins.title) + '</h3></div>' +
+        '<p class="text-sm leading-relaxed text-slate-400">' + esc(ins.body) + '</p></div>';
+    }).join('');
+  }
+
+  // ---------- interaction ----------
+  function wireInteractions() {
+    var pills = document.querySelectorAll('#filter-pills .pill');
+    for (var i = 0; i < pills.length; i++) {
+      pills[i].addEventListener('click', function () {
+        state.filter = this.dataset.filter;
+        for (var j = 0; j < pills.length; j++) pills[j].classList.remove('pill-active');
+        this.classList.add('pill-active');
+        renderTable();
+        renderBarChart();
+      });
+    }
+    var allPill = document.querySelector('#filter-pills .pill[data-filter="all"]');
+    if (allPill) allPill.classList.add('pill-active');
+
+    var ths = document.querySelectorAll('.sortable');
+    for (var k = 0; k < ths.length; k++) {
+      ths[k].addEventListener('click', function () {
+        var col = this.dataset.col;
+        if (state.sortCol === col) state.sortDir *= -1;
+        else { state.sortCol = col; state.sortDir = col === 'name' ? 1 : -1; }
+        renderTable();
+      });
+    }
+
+    el('table-search').addEventListener('input', function () {
+      state.query = this.value.trim();
+      renderTable();
+      renderBarChart();
+    });
+
+    el('provider-select').addEventListener('change', function () {
+      if (this.value) selectProvider(this.value);
+      else closeReport();
+    });
+  }
+
+  function populateSelect() {
+    var sorted = DATA.providers.slice().sort(function (a, b) { return totalOf(b) - totalOf(a); });
+    el('provider-select').innerHTML = '<option value="">Select a provider or tool</option>' + sorted.map(function (p) {
+      var total = totalOf(p);
+      return '<option value="' + esc(p.id) + '">' + esc(p.name) + ' · ' + total + '/30 · ' + esc(tierOf(total).name) + '</option>';
+    }).join('');
+    el('provider-select').disabled = false;
+    el('table-search').disabled = false;
+  }
+
+  // ---------- boot ----------
+  function showError(err) {
+    el('table-wrap').innerHTML = '<div class="p-10 text-center">' +
+      '<p class="text-sm font-medium text-red-300">Could not load the provider dataset.</p>' +
+      '<p class="mt-2 text-xs text-slate-500">' + esc(err && err.message ? err.message : String(err)) + '</p>' +
+      '<p class="mt-4 text-xs text-slate-500">The dataset is served from /api/providers with a static fallback at /data/providers.json.</p>' +
+      '</div>';
+    el('selector-hint').textContent = 'Data unavailable. Reload to retry.';
+    console.error('[SustainableAI Score]', err);
+  }
+
+  loadData().then(function (json) {
+    DATA = json;
+    renderChrome();
+    populateSelect();
+    wireInteractions();
+    renderTable();
+    renderBarChart();
+    renderSetup();
+    renderInsights();
+    console.log('[SustainableAI Score] loaded ' + DATA.providers.length + ' providers from ' + DATA_SOURCE);
+  }).catch(showError);
+})();
 </script>
 </body>
 </html>

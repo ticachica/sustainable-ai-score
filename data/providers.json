@@ -1,0 +1,300 @@
+{
+  "meta": {
+    "title": "SustainableAI Score",
+    "tagline": "See how your AI stack really stacks up.",
+    "description": "A 6-dimension framework rating AI providers and tools on environmental and societal sustainability. Higher is better.",
+    "lastUpdated": "2026-10-03",
+    "framework": "Sustainable AI Evaluation Framework",
+    "repo": "https://github.com/ticachica/sustainable-ai-score",
+    "license": "MIT"
+  },
+  "dimensions": [
+    { "key": "hw", "short": "H/W", "label": "Hardware & Manufacturing", "description": "Supply chain ethics, conflict minerals, fab locations, forced labor risk, right to repair, e-waste takeback." },
+    { "key": "dc", "short": "DC", "label": "Data Center Operations", "description": "Grid carbon intensity where the compute runs, renewable matching quality, water use, community impact." },
+    { "key": "train", "short": "Train", "label": "Training Footprint", "description": "Disclosed training compute and energy, dataset sourcing and consent, labeling labor conditions." },
+    { "key": "infer", "short": "Infer", "label": "Inference Efficiency", "description": "Model size options, quantization, sparse architectures, local inference availability, per-query energy." },
+    { "key": "gov", "short": "Gov", "label": "Company Governance", "description": "Open versus closed weights, published sustainability reporting, labor practices, litigation, lock-in." },
+    { "key": "tool", "short": "Tool", "label": "Tool/Agent Design", "description": "Local-first capability, caching, model routing by task complexity, transparency about per-call cost." }
+  ],
+  "tiers": [
+    { "name": "Excellent", "min": 26, "max": 30, "color": "#10b981" },
+    { "name": "Good", "min": 21, "max": 25, "color": "#84cc16" },
+    { "name": "Mixed", "min": 16, "max": 20, "color": "#f59e0b" },
+    { "name": "Poor", "min": 10, "max": 15, "color": "#f97316" },
+    { "name": "Avoid", "min": 6, "max": 9, "color": "#ef4444" }
+  ],
+  "personalSetup": {
+    "hardware": "MacBook Air M4 (32GB)",
+    "power": "Home solar (spring and summer)",
+    "localInference": "Ollama + Gemma 4 8B (Q4_K_M) / llama.cpp",
+    "cloudUse": "DeepSeek V4 Flash via OpenRouter free tier",
+    "modifiers": [
+      { "dimension": "hw", "delta": 1, "reason": "Reusing an existing device, which avoids new manufacturing impact." },
+      { "dimension": "dc", "delta": 1, "reason": "Local inference runs on home solar, not a utility grid." }
+    ]
+  },
+  "insights": [
+    { "title": "Transparency moved the needle", "tone": "good", "body": "Mistral published the first peer-reviewed life cycle assessment of an LLM and is the single largest mover in the table, climbing from Poor to Good. Disclosure alone lifted its score by seven points." },
+    { "title": "Local plus solar is still unbeaten", "tone": "good", "body": "Running open weights on hardware you already own, on solar power, scores 28 of 30. No cloud provider comes within six points. It remains the biggest single lever available to an individual." },
+    { "title": "The buildout is outrunning the grid", "tone": "warn", "body": "Google's electricity use rose 37 percent in a single year, Microsoft's emissions rose 25 percent, and most planned US data centers sit on land that was in drought. Efficiency gains are being consumed by volume." },
+    { "title": "Training disclosure is still the gap", "tone": "warn", "body": "Almost every provider scores 1 or 2 on training footprint. Meta is the only one publishing GPU-hours and carbon for an open model line, and even its newest frontier models are closed with no disclosures." },
+    { "title": "Regulation arrived, reporting has not", "tone": "warn", "body": "The EU AI Act now requires general purpose model providers to document energy consumption, and the EU Energy Efficiency Directive mandates data center reporting. Most labs still publish nothing." },
+    { "title": "xAI, now SpaceXAI, is the floor", "tone": "bad", "body": "Unpermitted gas turbines grew from 27 to 69, the Department of Justice is fighting a Clean Air Act citizen suit on national security grounds, and it remains the thinnest climate discloser among frontier labs." }
+  ],
+  "providers": [
+    {
+      "id": "local-setup",
+      "name": "Hermes CLI + Gemma 4 (local, solar)",
+      "kind": "tool",
+      "scores": { "hw": 5, "dc": 5, "train": 4, "infer": 5, "gov": 4, "tool": 5 },
+      "baseScores": { "hw": 4, "dc": 4, "train": 4, "infer": 5, "gov": 4, "tool": 5 },
+      "modifiers": [
+        { "dimension": "hw", "delta": 1, "reason": "Existing device reuse" },
+        { "dimension": "dc", "delta": 1, "reason": "Home solar" }
+      ],
+      "verdict": "Excellent",
+      "summary": "Runs on hardware you already own, powered by home solar, with open-weight models you control.",
+      "tradeoffs": "Model quality caps at the 7B to 13B level versus frontier cloud models. Not suitable for every task, so keep a cloud option for complex research.",
+      "gaps": [
+        "Smaller models mean lower quality on complex reasoning than cloud frontier models",
+        "No per-query energy tracking built into the tool chain"
+      ],
+      "sources": [
+        { "label": "Home solar plus M4 MacBook Air" },
+        { "label": "Ollama and llama.cpp, open-source local inference", "url": "https://ollama.com" },
+        { "label": "Gemma 4 8B Q4_K_M, roughly 5.4GB RAM and 15 to 30W sustained" }
+      ],
+      "lastReviewed": "2026-10-03",
+      "changeNotes": ""
+    },
+    {
+      "id": "mistral-ai",
+      "name": "Mistral AI",
+      "kind": "provider",
+      "scores": { "hw": 2, "dc": 3, "train": 4, "infer": 5, "gov": 4, "tool": 4 },
+      "verdict": "Good",
+      "summary": "The most transparent lab in the set, with a published life cycle assessment and open weights on its flagship.",
+      "tradeoffs": "Mistral published the first comprehensive, peer-reviewed life cycle assessment of a large language model, covering carbon, water and resource depletion across training and inference, and it moved its flagship Mistral Large 3 to Apache 2.0. Inference is efficient and aimed at a low-carbon French grid. Offsetting that, there is still no annual sustainability report, no PUE or renewable-matching methodology, and training datasets are explicitly withheld.",
+      "gaps": [
+        "No PUE, water use or renewable-matching methodology published for its own or partner data centers",
+        "No updated life cycle assessment for the current model line, and GPU counts rather than GPU-hours for training",
+        "Training datasets explicitly withheld as of August 2026",
+        "No supply chain ethics program: no conflict minerals policy, supplier locations, or e-waste takeback",
+        "The Saudi HUMAIN partnership hosts workloads on a fossil-heavy grid, partly offsetting the French advantage"
+      ],
+      "sources": [
+        { "label": "Mistral: our contribution to a global environmental standard for AI", "url": "https://mistral.ai/news/our-contribution-to-a-global-environmental-standard-for-ai/" },
+        { "label": "Carbone 4: life cycle assessment of an LLM from Mistral AI", "url": "https://carbone4.com/en/ia-generative-mission-mistral-ai" },
+        { "label": "ADEME: the need for reliable indicators to compare AI systems", "url": "https://infos.ademe.fr/societe-politiques-publiques/2025/nous-avons-besoin-dindicateurs-fiables-pour-comparer-les-ia-entre-elles/" },
+        { "label": "Mistral: introducing the Mistral 3 family", "url": "https://mistral.ai/news/mistral-3/" },
+        { "label": "Mistral help center: does Mistral AI disclose its training datasets", "url": "https://help.mistral.ai/en/articles/347390-does-mistral-ai-disclose-its-training-datasets" },
+        { "label": "Reuters: ASML becomes Mistral AI top shareholder", "url": "https://www.reuters.com/world/europe/asml-becomes-mistral-ais-top-shareholder-after-leading-latest-funding-round-2025-09-07/" },
+        { "label": "Mistral and HUMAIN: sovereign AI for Saudi Arabia", "url": "https://mistral.ai/news/mistral-x-humain/" },
+        { "label": "EU AI Act service desk: documenting energy consumption of general purpose models", "url": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/faq/what-should-provider-who-does-not-know-energy-consumption-its-general-purpose-ai-model" }
+      ],
+      "lastReviewed": "2026-10-03",
+      "changeNotes": "Rose from 15 to 22, and from Poor to Good, on the strength of the first peer-reviewed LLM life cycle assessment (July 2025, with Carbone 4 and ADEME) plus Apache 2.0 licensing on the flagship Mistral Large 3."
+    },
+    {
+      "id": "meta-llama",
+      "name": "Meta (Llama)",
+      "kind": "provider",
+      "scores": { "hw": 2, "dc": 3, "train": 4, "infer": 4, "gov": 3, "tool": 4 },
+      "verdict": "Mixed",
+      "summary": "Still the best training disclosure of any open model line, held back by gas fired growth and a thin supply chain story.",
+      "tradeoffs": "Llama 4 keeps peer-leading openness about training: architecture, data mix, 7.38 million H100-hours and 1,999 tonnes of CO2e. Meta has also signed genuine firm clean power including the Clinton nuclear plant and new nuclear agreements, and it shipped Muse Glimmer, a 30B model under Apache 2.0 that runs on a single consumer GPU. Against that, location based emissions rose 11 percent year on year, renewable matching is annual rather than hourly, and the 5 GW Hyperion buildout is gas heavy and under active litigation.",
+      "gaps": [
+        "No per-query inference energy or carbon published for any Llama or Muse model",
+        "No full lifecycle carbon assessment for any model line",
+        "Frontier Muse Spark models are closed weight with no model card or training disclosures",
+        "Energy and water for leased and under construction data centers are not disclosed",
+        "Annual rather than hourly renewable matching, with no 24/7 carbon-free energy target"
+      ],
+      "sources": [
+        { "label": "Meta 2025 Sustainability Report (FY2024)", "url": "https://sustainability.atmeta.com/wp-content/uploads/2025/08/Meta_2025-Sustainability-Report_.pdf" },
+        { "label": "Meta 2025 Environmental Data Index", "url": "https://sustainability.atmeta.com/wp-content/uploads/2025/10/Meta_2025-Environmental-Data-Index.pdf" },
+        { "label": "Llama 4 model card", "url": "https://raw.githubusercontent.com/meta-llama/llama-models/main/models/llama4/MODEL_CARD.md" },
+        { "label": "Meta AI: introducing Muse Spark", "url": "https://ai.meta.com/blog/introducing-muse-spark-msl/" },
+        { "label": "CNBC: Meta launches Muse Glimmer open-weight model", "url": "https://www.cnbc.com/2026/08/10/meta-muse-glimmer-open-weight-ai.html" },
+        { "label": "CNBC: Meta signs nuclear energy deals for the Prometheus supercluster", "url": "https://www.cnbc.com/2026/01/09/meta-signs-nuclear-energy-deals-to-power-prometheus-ai-supercluster.html" },
+        { "label": "Meta data centers: Richland Parish, Louisiana (Hyperion)", "url": "https://datacenters.atmeta.com/2026/07/deepening-our-investment-in-richland-parish-louisiana/" },
+        { "label": "Earthjustice: Louisiana regulators asked to investigate Meta financing deal", "url": "https://earthjustice.org/press/2026/louisiana-regulators-asked-to-investigate-shady-meta-financing-deal-that-could-leave-households-paying-for-tech-giants-electricity" },
+        { "label": "Meta 2026 Conflict Minerals Report", "url": "https://sustainability.atmeta.com/asset/2026-conflict-minerals-report/" }
+      ],
+      "lastReviewed": "2026-10-03",
+      "changeNotes": "Score holds at 20. Added firm nuclear procurement, an Apache 2.0 local model in Muse Glimmer, and water restoration above consumption, offset by an 11 percent rise in location based emissions and litigation over the gas fired Hyperion buildout."
+    },
+    {
+      "id": "google-deepmind",
+      "name": "Google DeepMind (Gemini)",
+      "kind": "provider",
+      "scores": { "hw": 3, "dc": 3, "train": 2, "infer": 5, "gov": 3, "tool": 3 },
+      "verdict": "Mixed",
+      "summary": "Publishes the most detailed per-query impact data in the industry while its absolute footprint keeps climbing.",
+      "tradeoffs": "Google now publishes measured per-query serving impact for Gemini, roughly 0.24 Wh of energy and 0.26 mL of water for a median prompt, which no other frontier lab does, and its Ironwood TPUs claim large carbon efficiency gains. Water replenishment reached 78 percent of consumption and PUE is 1.09. But total ambition-based emissions rose 18 percent to about 14.47 million tonnes, electricity use rose 37 percent in a single year, 24/7 carbon-free energy has stalled near 65 percent, and copyright litigation over training data has intensified.",
+      "gaps": [
+        "No disclosed training compute, energy or carbon for the Gemini line",
+        "24/7 carbon-free energy stalled near 65 percent against a 2030 target of 100 percent",
+        "Total ambition-based emissions up 18 percent year on year and 81 percent above the 2019 base year",
+        "Water consumption rose to about 10.87 billion gallons, with site level data only for owned facilities",
+        "No consumer facing per call energy or carbon indicator"
+      ],
+      "sources": [
+        { "label": "Google: 11th annual Environmental Report", "url": "https://blog.google/company-news/outreach-and-initiatives/sustainability/2026-environmental-report/" },
+        { "label": "Google Sustainability: 2026 Environmental Report", "url": "https://sustainability.google/google-2026-environmental-report/" },
+        { "label": "Google Cloud: measuring the environmental impact of AI inference", "url": "https://cloud.google.com/blog/products/infrastructure/measuring-the-environmental-impact-of-ai-inference" },
+        { "label": "Google: measuring the environmental impact of delivering AI at Google scale", "url": "https://services.google.com/fh/files/misc/measuring_the_environmental_impact_of_delivering_ai_at_google_scale.pdf" },
+        { "label": "Google Cloud: Ironwood TPUs deliver 3.7x carbon efficiency gains", "url": "https://cloud.google.com/blog/topics/systems/ironwood-tpus-deliver-37x-carbon-efficiency-gains" },
+        { "label": "Google data centers: operating sustainably (PUE 1.09)", "url": "https://datacenters.google/operating-sustainably/" },
+        { "label": "Google Open Source: Gemma 4 under Apache 2.0", "url": "https://opensource.googleblog.com/2026/03/gemma-4-expanding-the-gemmaverse-with-apache-20.html" },
+        { "label": "The Guardian: book publishers sue Google over Gemini training", "url": "https://www.theguardian.com/books/2026/jul/14/publishers-sue-google-gemini-ai-training" },
+        { "label": "Reuters: Google's 15 billion dollar India data centre project battles water and wildlife concerns", "url": "https://www.reuters.com/world/asia-pacific/googles-15-billion-india-data-centre-project-battles-water-wildlife-concerns-2026-08-06/" }
+      ],
+      "lastReviewed": "2026-10-03",
+      "changeNotes": "Rose from 17 to 19. Inference efficiency gained from published per-query impact figures and Ironwood TPU efficiency, and tool design gained from on-device Gemini Nano and open Gemma weights. Emissions and water continued to rise and litigation widened."
+    },
+    {
+      "id": "deepseek-v4",
+      "name": "DeepSeek V4 Flash",
+      "kind": "provider",
+      "scores": { "hw": 2, "dc": 2, "train": 3, "infer": 5, "gov": 2, "tool": 4 },
+      "verdict": "Mixed",
+      "summary": "Genuine efficiency leadership under MIT weights, still undermined by a coal heavy grid and zero footprint disclosure.",
+      "tradeoffs": "DeepSeek V4 sets a new efficiency bar: V4 Flash activates 13B of 284B parameters and cuts one million token context inference to 27 percent of the previous generation's FLOPs and 10 percent of its KV cache, with MIT licensed weights that make local deployment widespread. China's grid has also improved, with coal falling below half of generation. But the serving fleet is still carbon heavy, a new 1 GW Inner Mongolia campus raises absolute demand, and the company publishes no training energy, carbon, PUE or water data at all.",
+      "gaps": [
+        "No training energy, carbon, PUE or water disclosure, and a zero score on training energy in the Stanford transparency index",
+        "Serving fleet remains roughly half coal, at about 511 gCO2 per kWh",
+        "The 1 GW Ulanqab campus is not expected online until late 2027, so today's serving stays carbon heavy",
+        "Efficiency claims rest on DeepSeek's own baseline, with no independent energy benchmark of V4",
+        "Censorship is embedded in the weights rather than applied at the app layer, and persists in self hosted deployments",
+        "State linked ownership and alleged military support and export control evasion"
+      ],
+      "sources": [
+        { "label": "DeepSeek V4 preview announcement", "url": "https://www.deepseek.com/en/news/v4-preview/" },
+        { "label": "DeepSeek V4 technical report (arXiv)", "url": "https://arxiv.org/abs/2606.19348" },
+        { "label": "Stanford CRFM Foundation Model Transparency Index: DeepSeek", "url": "https://crfm.stanford.edu/fmti/December-2025/company-reports/DeepSeek_FinalReport_FMTI2025.html" },
+        { "label": "DataCenterDynamics: DeepSeek planning 1 GW data center in Inner Mongolia", "url": "https://www.datacenterdynamics.com/en/news/deepseek-planning-1gw-data-center-in-inner-mongolia-china-report/" },
+        { "label": "IEA Electricity 2026: emissions intensity outlook", "url": "https://www.iea.org/reports/electricity-2026/emissions" },
+        { "label": "DiPLab: The Human Cost of DeepSeek (data labeling labor)", "url": "https://ip-paris.hal.science/hal-04952735/file/THE%20HUMAN%20COST%20OF%20DEEPSEEK-DiPLab%20Policy%20Memo%201%281%29.pdf" },
+        { "label": "Reuters: US holds off blacklisting DeepSeek", "url": "https://www.reuters.com/world/china/us-holds-off-blacklisting-chinas-deepseek-more-than-100-firms-deemed-security-2026-06-17/" },
+        { "label": "The Guardian: DeepSeek censorship testing", "url": "https://www.theguardian.com/technology/2025/jan/28/we-tried-out-deepseek-it-works-well-until-we-asked-it-about-tiananmen-square-and-taiwan" }
+      ],
+      "lastReviewed": "2026-10-03",
+      "changeNotes": "Rose from 15 to 18. V4 adds a further step change in inference efficiency with MIT licensed weights, and China's grid crossed below 50 percent coal. A new 1 GW campus raises absolute demand, and no footprint disclosure has appeared."
+    },
+    {
+      "id": "anthropic-claude",
+      "name": "Anthropic (Claude)",
+      "kind": "provider",
+      "scores": { "hw": 2, "dc": 3, "train": 2, "infer": 3, "gov": 3, "tool": 3 },
+      "verdict": "Mixed",
+      "summary": "Real efficiency controls and a novel grid cost pledge, against an absence of any environmental reporting.",
+      "tradeoffs": "Model tiers plus an effort dial and prompt caching let you cut per-task energy, and Anthropic became the first AI lab to pledge covering 100 percent of grid upgrade costs and procuring net new generation for its data centers. It also joined the Frontier carbon removal coalition. But training and inference energy remain undisclosed, there is no sustainability report and no renewable energy target, and the models are closed weight and cloud only.",
+      "gaps": [
+        "No training compute, energy or carbon published, and zero environmental impact disclosure in the Stanford transparency index",
+        "No sustainability report, greenhouse gas inventory, net zero target or renewable energy target",
+        "No water consumption disclosure anywhere",
+        "No public dataset card, and a finalized 1.5 billion dollar copyright settlement over pirated books",
+        "Closed weights and cloud only, with no local or quantized path",
+        "No per query energy disclosure"
+      ],
+      "sources": [
+        { "label": "Anthropic: covering electricity price increases from our data centers", "url": "https://www.anthropic.com/news/covering-electricity-price-increases" },
+        { "label": "Anthropic: Transparency Hub voluntary commitments", "url": "https://www.anthropic.com/transparency/voluntary-commitments" },
+        { "label": "Anthropic and Amazon expand compute collaboration", "url": "https://www.anthropic.com/news/anthropic-amazon-compute" },
+        { "label": "TechCrunch: Anthropic joins the Frontier carbon removal coalition", "url": "https://techcrunch.com/2026/06/17/anthropic-becomes-first-ai-startup-to-join-the-frontier-carbon-removal-coalition/" },
+        { "label": "Heatmap: Anthropic is buying carbon removal, but not clean power", "url": "https://heatmap.news/climate/anthropic-carbon-emissions" },
+        { "label": "Stanford CRFM Foundation Model Transparency Index", "url": "https://crfm.stanford.edu/fmti/" },
+        { "label": "NBC News: Anthropic to cover data center electricity price increases", "url": "https://www.nbcnews.com/tech/tech-news/anthropic-cover-costs-electricity-price-increases-data-centers-rcna258554" },
+        { "label": "claude-carbon methodology: no published Scope 1, 2 or 3 emissions", "url": "https://github.com/gwittebolle/claude-carbon/blob/main/METHODOLOGY.md" }
+      ],
+      "lastReviewed": "2026-10-03",
+      "changeNotes": "Score holds at 16. The new grid cost pledge and carbon removal membership are governance positives, but no environmental reporting has appeared and the copyright settlement was finalized."
+    },
+    {
+      "id": "claude-desktop",
+      "name": "Claude Desktop",
+      "kind": "tool",
+      "scores": { "hw": 2, "dc": 3, "train": 2, "infer": 3, "gov": 3, "tool": 3 },
+      "verdict": "Mixed",
+      "summary": "Now lets you choose a model and bridge to local inference, but still ships a heavy sandbox and reports nothing.",
+      "tradeoffs": "The desktop app now exposes a model dropdown rather than defaulting to the largest model, and MCP extensions plus local model bridges make it possible to route some work to Ollama or LM Studio. That is a real improvement in tool design. It still reports no per call energy or cost, launches a roughly 1.8 GB sandbox virtual machine on every start even for chat only use, and inherits Anthropic's training opacity.",
+      "gaps": [
+        "No per call or per task energy and cost transparency, only usage limit meters",
+        "Cloud only by default, with local inference available only through unofficial bridges",
+        "Model choice is manual rather than automatically routed by task complexity",
+        "Ships a roughly 1.8 GB sandbox virtual machine on every launch, even for chat",
+        "Inherits Anthropic's training opacity and discloses no environmental data"
+      ],
+      "sources": [
+        { "label": "Anthropic: models overview (model tiers used by the desktop picker)", "url": "https://platform.claude.com/docs/en/about-claude/models/overview" },
+        { "label": "Claude help center: how usage and length limits work", "url": "https://support.claude.com/en/articles/11647753-how-do-usage-and-length-limits-work" },
+        { "label": "claude-carbon: third-party CO2 and cost status line, since no first-party reporting exists", "url": "https://github.com/nordfalk/claude-carbon" },
+        { "label": "Same Anthropic infrastructure as the Claude API, so hardware, data center and training scores are inherited" }
+      ],
+      "lastReviewed": "2026-10-03",
+      "changeNotes": "Rose from 15 to 16. The app now offers a model picker and MCP based local model bridges, moving it out of the Poor band, but it still reports no per call energy or cost."
+    },
+    {
+      "id": "openai-codex",
+      "name": "OpenAI Codex CLI",
+      "kind": "tool",
+      "scores": { "hw": 2, "dc": 2, "train": 1, "infer": 4, "gov": 2, "tool": 4 },
+      "verdict": "Poor",
+      "summary": "Now a genuine hybrid agent with local models, sitting on the weakest disclosure of any major lab.",
+      "tradeoffs": "Codex CLI is the best designed open-source cloud coding agent and, since January 2026, it runs fully local open-weight models through Ollama and LM Studio, with model routing and prompt caching. Those tool and inference gains are real. The vendor behind it still publishes no sustainability report, no verified emissions and no training energy, while new capacity is increasingly gas fired and litigation keeps widening.",
+      "gaps": [
+        "OpenAI still publishes no environmental or sustainability report, and no verified Scope 1, 2 or 3 emissions",
+        "No training compute, energy or carbon published for the GPT line",
+        "New Stargate capacity is gas heavy, with a 3.2 GW Georgia project drawing on roughly 5.8 GW of mostly gas generation",
+        "The Abilene campus consumed about 463 million gallons of water while local residents faced drought restrictions",
+        "Escalating litigation on copyright, safety and agent misuse",
+        "Data labeling labor conditions largely unchanged, with Kenyan workers reported at roughly $1.32 to $2 per hour",
+        "No conflict minerals, e-waste takeback or right to repair policy, including for the in-house Jalapeno inference chip"
+      ],
+      "sources": [
+        { "label": "Ollama docs: Codex CLI integration and local models", "url": "https://docs.ollama.com/integrations/codex" },
+        { "label": "OpenAI Codex CLI on GitHub", "url": "https://github.com/openai/codex" },
+        { "label": "Fortune: AI giants are quiet on climate in a post-ESG Wall Street", "url": "https://fortune.com/2026/08/12/ai-giants-are-quiet-on-climate-in-sign-of-post-esg-wall-street/" },
+        { "label": "LA Times: AI giants stay quiet on climate as California prepares to force disclosure", "url": "https://www.latimes.com/business/story/2026-08-12/ai-giants-stay-quiet-on-climate-as-california-prepares-to-force-disclosure" },
+        { "label": "Microsoft 2026 Environmental Sustainability Report", "url": "https://cdn-dynmedia-1.microsoft.com/is/content/microsoftcorp/microsoft/msc/documents/presentations/CSR/2026-Microsoft-Environmental-Sustainability-Report-PDF.pdf" },
+        { "label": "Texas Tribune: data centers are thirsty for Texas water", "url": "https://www.texastribune.org/2025/09/25/texas-data-center-water-use/" },
+        { "label": "TIME: OpenAI used Kenyan workers on less than $2 per hour", "url": "https://time.com/6247678/openai-chatgpt-kenya-workers/" },
+        { "label": "New York Times: publishers ask court to penalize OpenAI", "url": "https://www.nytimes.com/2026/07/09/technology/new-york-times-openai.html" },
+        { "label": "arXiv: How Hungry is AI? Benchmarking energy, water and carbon of LLM inference", "url": "https://arxiv.org/abs/2505.09598v2" }
+      ],
+      "lastReviewed": "2026-10-03",
+      "changeNotes": "Rose from 13 to 15. Codex CLI gained first-class local inference via Ollama and LM Studio plus prompt caching, lifting tool and inference scores. Vendor disclosure and data center impact did not improve."
+    },
+    {
+      "id": "xai-grok",
+      "name": "xAI / SpaceXAI (Grok)",
+      "kind": "provider",
+      "scores": { "hw": 2, "dc": 1, "train": 1, "infer": 2, "gov": 1, "tool": 3 },
+      "verdict": "Poor",
+      "summary": "Unpermitted gas turbines, federal litigation, and the thinnest climate disclosure of any frontier lab.",
+      "tradeoffs": "The only genuine improvement is tool design: Grok Build was open sourced under Apache 2.0 with a local-first design, a real model ladder, and prompt caching. Everything else is negative. The unpermitted turbine fleet grew from 27 to 69 units, the Department of Justice intervened to fight a Clean Air Act citizen suit on national security grounds, and the company remains the thinnest discloser among frontier labs.",
+      "gaps": [
+        "Unpermitted gas turbines grew from 27 to 69, reported as the largest NOx source in greater Memphis",
+        "Department of Justice intervention to dismiss a Clean Air Act citizen suit, with a likely appeal",
+        "No published Scope 1, 2 or 3 emissions, and no PUE or per query energy data",
+        "Five data centers in the Memphis and Southaven area with a 946 MW campus, and an aquifer withdrawal dispute",
+        "Environmental justice concerns: South Memphis is predominantly Black and low income",
+        "No resolution on the turbine removal timeline or the data center moratorium vote"
+      ],
+      "sources": [
+        { "label": "NAACP: NAACP sues xAI for illegal pollution from data center power plant", "url": "https://naacp.org/articles/naacp-sues-xai-illegal-pollution-data-center-power-plant" },
+        { "label": "NAACP: complaint in NAACP v. xAI (Clean Air Act)", "url": "https://naacp.org/sites/default/files/documents/1%20-%20Complaint.pdf" },
+        { "label": "Southern Environmental Law Center", "url": "https://www.selcva.org" },
+        { "label": "Department of Justice: files to intervene and dismiss the lawsuit", "url": "https://www.justice.gov/opa/pr/justice-department-files-intervene-and-dismiss-lawsuit-would-hamper-americas-ai-innovation" },
+        { "label": "Reuters: pollution from the unpermitted power project hits Black communities hardest", "url": "https://www.reuters.com/world/americas/pollution-musks-unpermitted-xai-power-project-hits-hardest-black-communities-2026-07-14/" },
+        { "label": "Scientific American: the Colossus data center is fueling a backlash", "url": "https://www.scientificamerican.com/article/spacexais-colossus-data-center-is-fueling-a-massive-backlash/" },
+        { "label": "Business Insider: xAI completes its rebrand to SpaceXAI", "url": "https://www.businessinsider.com/xai-rebrand-spacexai-new-logo-x-handle-spacex-2026-7" },
+        { "label": "xAI: Grok Build open source", "url": "https://x.ai/news/grok-build-open-source" },
+        { "label": "Epoch AI: Grok training resources", "url": "https://epoch.ai/data-insights/grok-4-training-resources" }
+      ],
+      "lastReviewed": "2026-10-03",
+      "changeNotes": "Rose from 8 to 10 only because Grok Build was open sourced under Apache 2.0, which keeps it the lowest score in the table. The turbine fleet expanded from 27 to 69 units, the DOJ intervened in the Clean Air Act suit, and the company rebranded to SpaceXAI."
+    }
+  ]
+}

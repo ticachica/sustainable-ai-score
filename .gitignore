@@ -1,0 +1,8 @@
+# Local research staging, written by tooling during data refreshes.
+.research/
+
+# Editor and OS noise
+.DS_Store
+*.swp
+.idea/
+.vscode/
