@@ -523,7 +523,10 @@
   // ---------- charts ----------
   function renderBarChart() {
     var list = visibleProviders().slice().sort(function (a, b) { return totalOf(b) - totalOf(a); });
-    var ctx = el('barChart').getContext('2d');
+    var canvas = el('barChart');
+    // Grow the chart with the dataset so bars stay readable as providers are added.
+    canvas.parentElement.style.height = Math.max(320, list.length * 34) + 'px';
+    var ctx = canvas.getContext('2d');
     var labels = list.map(function (p) { return p.name; });
     var data = list.map(totalOf);
     var colors = list.map(function (p) {
